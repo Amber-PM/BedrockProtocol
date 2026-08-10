@@ -36,8 +36,16 @@ final class IntGameRule extends GameRule{
 		return $this->value;
 	}
 
+	/**
+	 * StartGamePacket used to carry the legacy varint encoding of this rule. As of 1.26.40 it uses the same encoding
+	 * as everything else.
+	 */
+	private static function isLegacy(int $protocolId, bool $isStartGame) : bool{
+		return ($isStartGame && $protocolId < ProtocolInfo::PROTOCOL_1_26_40) || $protocolId < ProtocolInfo::PROTOCOL_1_21_111;
+	}
+
 	public function encode(ByteBufferWriter $out, int $protocolId, bool $isStartGame) : void{
-		if($isStartGame || $protocolId < ProtocolInfo::PROTOCOL_1_21_111){
+		if(self::isLegacy($protocolId, $isStartGame)){
 			VarInt::writeUnsignedInt($out, $this->value);
 		}else{
 			LE::writeUnsignedInt($out, $this->value);
@@ -45,6 +53,6 @@ final class IntGameRule extends GameRule{
 	}
 
 	public static function decode(ByteBufferReader $in, int $protocolId, bool $isPlayerModifiable, bool $isStartGame) : self{
-		return new self(($isStartGame || $protocolId < ProtocolInfo::PROTOCOL_1_21_111) ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in), $isPlayerModifiable);
+		return new self(self::isLegacy($protocolId, $isStartGame) ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in), $isPlayerModifiable);
 	}
 }

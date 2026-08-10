@@ -20,6 +20,8 @@ use pmmp\encoding\DataDecodeException;
 use pmmp\encoding\VarInt;
 use pocketmine\color\Color;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\utils\Binary;
 use function count;
 
@@ -74,7 +76,17 @@ final class MapImage{
 	 */
 	public function getPixels() : array{ return $this->pixels; }
 
-	public function encode(ByteBufferWriter $out) : void{
+	public function encode(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			//as of 1.26.40 the pixels are big endian ARGB ints, and can't share the varint cache
+			for($y = 0; $y < $this->height; ++$y){
+				for($x = 0; $x < $this->width; ++$x){
+					CommonTypes::putBeArgb($out, $this->pixels[$y][$x]->toARGB());
+				}
+			}
+			return;
+		}
+
 		if($this->encodedPixelCache === null){
 			$serializer = new ByteBufferWriter();
 			for($y = 0; $y < $this->height; ++$y){
@@ -93,7 +105,7 @@ final class MapImage{
 	 * @throws PacketDecodeException
 	 * @throws DataDecodeException
 	 */
-	public static function decode(ByteBufferReader $in, int $height, int $width) : self{
+	public static function decode(ByteBufferReader $in, int $protocolId, int $height, int $width) : self{
 		if($width > self::MAX_WIDTH){
 			throw new PacketDecodeException("Image width must be at most " . self::MAX_WIDTH . " pixels wide");
 		}
@@ -105,7 +117,9 @@ final class MapImage{
 		for($y = 0; $y < $height; ++$y){
 			$row = [];
 			for($x = 0; $x < $width; ++$x){
-				$row[] = Color::fromRGBA(Binary::flipIntEndianness(VarInt::readUnsignedInt($in)));
+				$row[] = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+					Color::fromARGB(CommonTypes::getBeArgb($in)) :
+					Color::fromRGBA(Binary::flipIntEndianness(VarInt::readUnsignedInt($in)));
 			}
 			$pixels[] = $row;
 		}

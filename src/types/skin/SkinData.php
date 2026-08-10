@@ -22,6 +22,13 @@ class SkinData{
 	public const ARM_SIZE_SLIM = "slim";
 	public const ARM_SIZE_WIDE = "wide";
 
+	/** As of 1.26.40 the arm size is sent as an enum instead of a string. */
+	public const ARM_SIZE_ID_SLIM = 0;
+	public const ARM_SIZE_ID_WIDE = 1;
+
+	/** As of 1.26.40 every persona piece tint carries exactly this many colours. */
+	public const PIECE_TINT_COLOR_COUNT = 4;
+
 	private SkinImage $capeImage;
 	private string $fullSkinId;
 
@@ -51,7 +58,8 @@ class SkinData{
 		private bool $persona = false,
 		private bool $personaCapeOnClassic = false,
 		private bool $isPrimaryUser = true,
-		private bool $override = true
+		private bool $override = true,
+		private string $profileHash = ""
 	){
 		$this->capeImage = $capeImage ?? new SkinImage(0, 0, "");
 		//this has to be unique or the client will do stupid things
@@ -142,6 +150,11 @@ class SkinData{
 	public function isVerified() : bool{
 		return $this->isVerified;
 	}
+
+	/**
+	 * Client-generated hash of the equipped persona skin. Only sent as of 1.26.40.
+	 */
+	public function getProfileHash() : string{ return $this->profileHash; }
 
 	/**
 	 * @internal

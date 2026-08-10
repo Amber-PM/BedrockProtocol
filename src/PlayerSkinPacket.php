@@ -42,18 +42,23 @@ class PlayerSkinPacket extends DataPacket implements ClientboundPacket, Serverbo
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->uuid = CommonTypes::getUUID($in);
-		$this->skin = CommonTypes::getSkin($in);
+		$this->skin = CommonTypes::getSkin($in, $protocolId);
 		$this->newSkinName = CommonTypes::getString($in);
 		$this->oldSkinName = CommonTypes::getString($in);
-		$this->skin->setVerified(CommonTypes::getBool($in));
+		if($protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+			//the trusted flag is part of the skin as of 1.26.40
+			$this->skin->setVerified(CommonTypes::getBool($in));
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putUUID($out, $this->uuid);
-		CommonTypes::putSkin($out, $this->skin);
+		CommonTypes::putSkin($out, $protocolId, $this->skin);
 		CommonTypes::putString($out, $this->newSkinName);
 		CommonTypes::putString($out, $this->oldSkinName);
-		CommonTypes::putBool($out, $this->skin->isVerified());
+		if($protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+			CommonTypes::putBool($out, $this->skin->isVerified());
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

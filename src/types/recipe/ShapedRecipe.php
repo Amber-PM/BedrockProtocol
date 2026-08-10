@@ -17,6 +17,8 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\CraftingDataPacket;
+use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
@@ -112,16 +114,23 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		$recipeId = CommonTypes::getString($in);
 		$width = VarInt::readSignedInt($in);
 		$height = VarInt::readSignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			//the ingredients are length prefixed as of 1.26.40, but must still match width * height
+			$ingredientCount = VarInt::readUnsignedInt($in);
+			if($ingredientCount !== $width * $height){
+				throw new PacketDecodeException("Shaped recipe ingredient count $ingredientCount does not match width * height");
+			}
+		}
 		$input = [];
 		for($row = 0; $row < $height; ++$row){
 			for($column = 0; $column < $width; ++$column){
-				$input[$row][$column] = CommonTypes::getRecipeIngredient($in);
+				$input[$row][$column] = CommonTypes::getRecipeIngredient($in, $protocolId);
 			}
 		}
 
 		$output = [];
 		for($k = 0, $resultCount = VarInt::readUnsignedInt($in); $k < $resultCount; ++$k){
-			$output[] = CommonTypes::getItemStackWithoutStackId($in);
+			$output[] = CommonTypes::getItemStackWithoutStackId($in, $protocolId);
 		}
 		$uuid = CommonTypes::getUUID($in);
 		$block = CommonTypes::getString($in);
@@ -129,8 +138,13 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
 			$symmetric = CommonTypes::getBool($in);
 
-			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
-				$unlockingRequirement = RecipeUnlockingRequirement::read($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				//as of 1.26.40 the requirement is an optional, and it's only sent for the non-chemistry variant
+				$unlockingRequirement = $recipeType === CraftingDataPacket::ENTRY_SHAPED ?
+					CommonTypes::readOptional($in, fn(ByteBufferReader $in) => RecipeUnlockingRequirement::read($in, $protocolId)) :
+					null;
+			}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+				$unlockingRequirement = RecipeUnlockingRequirement::read($in, $protocolId);
 			}
 		}
 
@@ -143,15 +157,18 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		CommonTypes::putString($out, $this->recipeId);
 		VarInt::writeSignedInt($out, $this->getWidth());
 		VarInt::writeSignedInt($out, $this->getHeight());
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			VarInt::writeUnsignedInt($out, $this->getWidth() * $this->getHeight());
+		}
 		foreach($this->input as $row){
 			foreach($row as $ingredient){
-				CommonTypes::putRecipeIngredient($out, $ingredient);
+				CommonTypes::putRecipeIngredient($out, $protocolId, $ingredient);
 			}
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->output));
 		foreach($this->output as $item){
-			CommonTypes::putItemStackWithoutStackId($out, $item);
+			CommonTypes::putItemStackWithoutStackId($out, $protocolId, $item);
 		}
 
 		CommonTypes::putUUID($out, $this->uuid);
@@ -160,8 +177,15 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
 			CommonTypes::putBool($out, $this->symmetric);
 
-			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
-				$this->unlockingRequirement->write($out);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				//the chemistry variant doesn't carry the requirement at all as of 1.26.40
+				CommonTypes::writeOptional(
+					$out,
+					$this->getTypeId() === CraftingDataPacket::ENTRY_SHAPED ? $this->unlockingRequirement : null,
+					fn(ByteBufferWriter $out, RecipeUnlockingRequirement $requirement) => $requirement->write($out, $protocolId)
+				);
+			}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+				$this->unlockingRequirement->write($out, $protocolId);
 			}
 		}
 

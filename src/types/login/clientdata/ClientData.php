@@ -101,6 +101,13 @@ final class ClientData{
 	public bool $IsPartyLeader;
 
 	/**
+	 * Client-generated hash of the equipped persona skin.
+	 *
+	 * >= ProtocolInfo::PROTOCOL_1_26_40
+	 */
+	public string $ProfileHash;
+
+	/**
 	 * @var ClientDataPersonaSkinPiece[]
 	 * @required
 	 */
