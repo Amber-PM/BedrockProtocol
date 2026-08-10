@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\CraftingDataPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
@@ -82,21 +83,34 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 		return $this->recipeNetId;
 	}
 
+	/**
+	 * Of the three shapeless variants, only the plain and shulker box ones carry an unlocking requirement as of
+	 * 1.26.40.
+	 */
+	private static function hasUnlockingRequirement(int $recipeType) : bool{
+		return $recipeType === CraftingDataPacket::ENTRY_SHAPELESS || $recipeType === CraftingDataPacket::ENTRY_USER_DATA_SHAPELESS;
+	}
+
 	public static function decode(int $recipeType, ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::getString($in);
 		$input = [];
 		for($j = 0, $ingredientCount = VarInt::readUnsignedInt($in); $j < $ingredientCount; ++$j){
-			$input[] = CommonTypes::getRecipeIngredient($in);
+			$input[] = CommonTypes::getRecipeIngredient($in, $protocolId);
 		}
 		$output = [];
 		for($k = 0, $resultCount = VarInt::readUnsignedInt($in); $k < $resultCount; ++$k){
-			$output[] = CommonTypes::getItemStackWithoutStackId($in);
+			$output[] = CommonTypes::getItemStackWithoutStackId($in, $protocolId);
 		}
 		$uuid = CommonTypes::getUUID($in);
 		$block = CommonTypes::getString($in);
 		$priority = VarInt::readSignedInt($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
-			$unlockingRequirement = RecipeUnlockingRequirement::read($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			//as of 1.26.40 the requirement is an optional, and the chemistry variant doesn't carry it at all
+			$unlockingRequirement = self::hasUnlockingRequirement($recipeType) ?
+				CommonTypes::readOptional($in, fn(ByteBufferReader $in) => RecipeUnlockingRequirement::read($in, $protocolId)) :
+				null;
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+			$unlockingRequirement = RecipeUnlockingRequirement::read($in, $protocolId);
 		}
 
 		$recipeNetId = CommonTypes::readRecipeNetId($in);
@@ -108,19 +122,25 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 		CommonTypes::putString($out, $this->recipeId);
 		VarInt::writeUnsignedInt($out, count($this->inputs));
 		foreach($this->inputs as $item){
-			CommonTypes::putRecipeIngredient($out, $item);
+			CommonTypes::putRecipeIngredient($out, $protocolId, $item);
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->outputs));
 		foreach($this->outputs as $item){
-			CommonTypes::putItemStackWithoutStackId($out, $item);
+			CommonTypes::putItemStackWithoutStackId($out, $protocolId, $item);
 		}
 
 		CommonTypes::putUUID($out, $this->uuid);
 		CommonTypes::putString($out, $this->blockName);
 		VarInt::writeSignedInt($out, $this->priority);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
-			$this->unlockingRequirement->write($out);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			CommonTypes::writeOptional(
+				$out,
+				self::hasUnlockingRequirement($this->getTypeId()) ? $this->unlockingRequirement : null,
+				fn(ByteBufferWriter $out, RecipeUnlockingRequirement $requirement) => $requirement->write($out, $protocolId)
+			);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+			$this->unlockingRequirement->write($out, $protocolId);
 		}
 
 		CommonTypes::writeRecipeNetId($out, $this->recipeNetId);

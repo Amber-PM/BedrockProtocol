@@ -20,6 +20,7 @@ use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\EntityDiagnosticTimingInfo;
 use pocketmine\network\mcpe\protocol\types\MemoryCategoryCounter;
+use pocketmine\network\mcpe\protocol\types\SystemCategory;
 use pocketmine\network\mcpe\protocol\types\SystemDiagnosticTimingInfo;
 use pocketmine\network\mcpe\protocol\types\WhiskerScopeDataSummary;
 use function count;
@@ -56,6 +57,13 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 	 * @phpstan-var list<WhiskerScopeDataSummary>
 	 */
 	private array $whiskerScopes = [];
+	/**
+	 * Maps diagnostics category names to system indices. Only sent as of 1.26.40.
+	 *
+	 * @var SystemCategory[]
+	 * @phpstan-var list<SystemCategory>
+	 */
+	private array $systemCategories = [];
 
 	/**
 	 * @generate-create-func
@@ -142,6 +150,14 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 	 */
 	public function getWhiskerScopes() : array{ return $this->whiskerScopes; }
 
+	/**
+	 * Only sent as of 1.26.40.
+	 *
+	 * @return SystemCategory[]
+	 * @phpstan-return list<SystemCategory>
+	 */
+	public function getSystemCategories() : array{ return $this->systemCategories; }
+
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->avgFps = LE::readFloat($in);
 		$this->avgServerSimTickTimeMS = LE::readFloat($in);
@@ -168,6 +184,13 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 				$this->systemDiagnostics = [];
 				for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
 					$this->systemDiagnostics[] = SystemDiagnosticTimingInfo::read($in);
+				}
+
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+					$this->systemCategories = [];
+					for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
+						$this->systemCategories[] = SystemCategory::read($in);
+					}
 				}
 
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
@@ -206,6 +229,13 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 				VarInt::writeUnsignedInt($out, count($this->systemDiagnostics));
 				foreach($this->systemDiagnostics as $value){
 					$value->write($out);
+				}
+
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+					VarInt::writeUnsignedInt($out, count($this->systemCategories));
+					foreach($this->systemCategories as $value){
+						$value->write($out);
+					}
 				}
 
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){

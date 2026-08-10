@@ -55,8 +55,11 @@ final class PlayerAction{
 	public const STOP_CRAWLING = 33;
 	public const START_FLYING = 34;
 	public const STOP_FLYING = 35;
+	public const RECEIVED_SERVER_DATA = 36;
 
 	public const START_USING_ITEM = 37;
+	/** >= ProtocolInfo::PROTOCOL_1_26_40 */
+	public const INTERNAL_UPDATE = 38;
 
 	//Backwards compatibility (blame @dktapps)
 	public const CRACK_BREAK = 18;

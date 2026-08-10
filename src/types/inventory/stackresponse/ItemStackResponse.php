@@ -18,6 +18,7 @@ use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -52,7 +53,12 @@ final class ItemStackResponse{
 		$result = Byte::readUnsigned($in);
 		$requestId = CommonTypes::readItemStackRequestId($in);
 		$containerInfos = [];
-		if($result === self::RESULT_OK){
+		//as of 1.26.40 the container infos are an optional inside an always-present optional, rather than being
+		//conditional on the result
+		$hasContainerInfos = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+			CommonTypes::getBool($in) && CommonTypes::getBool($in) :
+			$result === self::RESULT_OK;
+		if($hasContainerInfos){
 			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 				$containerInfos[] = ItemStackResponseContainerInfo::read($in, $protocolId);
 			}
@@ -63,7 +69,13 @@ final class ItemStackResponse{
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->result);
 		CommonTypes::writeItemStackRequestId($out, $this->requestId);
-		if($this->result === self::RESULT_OK){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			CommonTypes::putBool($out, true);
+			CommonTypes::putBool($out, $hasContainerInfos = count($this->containerInfos) > 0);
+		}else{
+			$hasContainerInfos = $this->result === self::RESULT_OK;
+		}
+		if($hasContainerInfos){
 			VarInt::writeUnsignedInt($out, count($this->containerInfos));
 			foreach($this->containerInfos as $containerInfo){
 				$containerInfo->write($out, $protocolId);

@@ -50,7 +50,12 @@ final class ItemStackResponseSlotInfo{
 		$slot = Byte::readUnsigned($in);
 		$hotbarSlot = Byte::readUnsigned($in);
 		$count = Byte::readUnsigned($in);
-		$itemStackId = CommonTypes::readServerItemStackId($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			//the stack ID became an optional inside an always-present optional
+			$itemStackId = CommonTypes::getBool($in) && CommonTypes::getBool($in) ? CommonTypes::readServerItemStackId($in) : 0;
+		}else{
+			$itemStackId = CommonTypes::readServerItemStackId($in);
+		}
 		$customName = CommonTypes::getString($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
 			$filteredCustomName = CommonTypes::getString($in);
@@ -63,7 +68,15 @@ final class ItemStackResponseSlotInfo{
 		Byte::writeUnsigned($out, $this->slot);
 		Byte::writeUnsigned($out, $this->hotbarSlot);
 		Byte::writeUnsigned($out, $this->count);
-		CommonTypes::writeServerItemStackId($out, $this->itemStackId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			CommonTypes::putBool($out, true);
+			CommonTypes::putBool($out, $hasStackId = $this->itemStackId > 0);
+			if($hasStackId){
+				CommonTypes::writeServerItemStackId($out, $this->itemStackId);
+			}
+		}else{
+			CommonTypes::writeServerItemStackId($out, $this->itemStackId);
+		}
 		CommonTypes::putString($out, $this->customName);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
 			CommonTypes::putString($out, $this->filteredCustomName);

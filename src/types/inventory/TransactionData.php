@@ -19,6 +19,8 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\DataDecodeException;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
 abstract class TransactionData{
@@ -51,12 +53,20 @@ abstract class TransactionData{
 	 * @throws DataDecodeException
 	 * @throws PacketDecodeException
 	 */
-	final public function decodeAuthInput(ByteBufferReader $in) : void{
-		$actionCount = VarInt::readUnsignedInt($in);
+	final public function decodeAuthInput(ByteBufferReader $in, int $protocolId) : void{
 		$this->actions = [];
-		for($i = 0; $i < $actionCount; ++$i){
-			$this->actions[] = (new NetworkInventoryAction())->readAuthInput($in);
+		//as of 1.26.40 the action list sits inside an optional which is itself inside an always-present optional
+		$hasActions = true;
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$hasActions = CommonTypes::getBool($in) && CommonTypes::getBool($in);
 		}
+		if($hasActions){
+			$actionCount = VarInt::readUnsignedInt($in);
+			for($i = 0; $i < $actionCount; ++$i){
+				$this->actions[] = (new NetworkInventoryAction())->readAuthInput($in, $protocolId);
+			}
+		}
+		$this->decodeData($in, $protocolId);
 	}
 
 	/**
@@ -73,11 +83,19 @@ abstract class TransactionData{
 		$this->encodeData($out, $protocolId);
 	}
 
-	final public function encodeAuthInput(ByteBufferWriter $out) : void{
-		VarInt::writeUnsignedInt($out, count($this->actions));
-		foreach($this->actions as $action){
-			$action->writeAuthInput($out);
+	final public function encodeAuthInput(ByteBufferWriter $out, int $protocolId) : void{
+		$hasActions = true;
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			CommonTypes::putBool($out, true);
+			CommonTypes::putBool($out, $hasActions = count($this->actions) > 0);
 		}
+		if($hasActions){
+			VarInt::writeUnsignedInt($out, count($this->actions));
+			foreach($this->actions as $action){
+				$action->writeAuthInput($out, $protocolId);
+			}
+		}
+		$this->encodeData($out, $protocolId);
 	}
 
 	abstract protected function encodeData(ByteBufferWriter $out, int $protocolId) : void;

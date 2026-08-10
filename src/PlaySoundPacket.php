@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 
@@ -30,6 +31,12 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 	public float $volume;
 	public float $pitch;
 	public ?int $serverSoundHandle = null;
+	/**
+	 * How many extra times to repeat the sound after the first playback; 0 (the default) plays it exactly once.
+	 * -1 loops indefinitely, until the sound is stopped through its server sound handle.
+	 * >= ProtocolInfo::PROTOCOL_1_26_40
+	 */
+	public int $loopCount = 0;
 
 	/**
 	 * @generate-create-func
@@ -62,6 +69,9 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 		$this->z = $blockPosition->getZ() / 8;
 		$this->volume = LE::readFloat($in);
 		$this->pitch = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$this->loopCount = VarInt::readSignedInt($in);
+		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
 			$this->serverSoundHandle = CommonTypes::readOptional($in, LE::readUnsignedLong(...));
 		}
@@ -72,6 +82,9 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 		CommonTypes::putBlockPosition($out, new BlockPosition((int) ($this->x * 8), (int) ($this->y * 8), (int) ($this->z * 8)), $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		LE::writeFloat($out, $this->volume);
 		LE::writeFloat($out, $this->pitch);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			VarInt::writeSignedInt($out, $this->loopCount);
+		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
 			CommonTypes::writeOptional($out, $this->serverSoundHandle, LE::writeUnsignedLong(...));
 		}
