@@ -34,21 +34,22 @@ final class CreativeGroupEntry{
 
 	public function getIcon() : ItemStack{ return $this->icon; }
 
-	public static function read(ByteBufferReader $in, int $protocolId) : self{
-		//the category became a single byte in 1.26.40
-		$categoryId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? Byte::readUnsigned($in) : LE::readSignedInt($in);
+	public static function read(ByteBufferReader $in, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : self{
+		$categoryId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+			Byte::readUnsigned($in) :
+			LE::readSignedInt($in);
 		$categoryName = CommonTypes::getString($in);
 		$icon = CommonTypes::getItemStackWithoutStackId($in, $protocolId);
 		return new self($categoryId, $categoryName, $icon);
 	}
 
-	public function write(ByteBufferWriter $out, int $protocolId) : void{
+	public function write(ByteBufferWriter $out, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			Byte::writeUnsigned($out, $this->categoryId);
 		}else{
 			LE::writeSignedInt($out, $this->categoryId);
 		}
 		CommonTypes::putString($out, $this->categoryName);
-		CommonTypes::putItemStackWithoutStackId($out, $protocolId, $this->icon);
+		CommonTypes::putItemStackWithoutStackId($out, $this->icon, $protocolId);
 	}
 }

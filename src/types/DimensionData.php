@@ -40,7 +40,6 @@ final class DimensionData{
 
 	public function getDimensionType() : int{ return $this->dimensionType; }
 
-	/** UUID of the behaviour pack which added the dimension. Only sent as of 1.26.40. */
 	public function getPackId() : ?UuidInterface{ return $this->packId; }
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
@@ -49,9 +48,9 @@ final class DimensionData{
 		$generator = VarInt::readSignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
 			$dimensionType = VarInt::readSignedInt($in);
-			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-				$packId = CommonTypes::getUUID($in);
-			}
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$packId = CommonTypes::getUUID($in);
 		}
 
 		return new self($maxHeight, $minHeight, $generator, $dimensionType ?? DimensionIds::OVERWORLD, $packId ?? null);
@@ -63,9 +62,9 @@ final class DimensionData{
 		VarInt::writeSignedInt($out, $this->generator);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
 			VarInt::writeSignedInt($out, $this->dimensionType);
-			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-				CommonTypes::putUUID($out, $this->packId ?? Uuid::fromString(Uuid::NIL));
-			}
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			CommonTypes::putUUID($out, $this->packId ?? Uuid::fromString(Uuid::NIL));
 		}
 	}
 }

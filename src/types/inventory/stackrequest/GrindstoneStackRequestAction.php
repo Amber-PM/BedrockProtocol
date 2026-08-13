@@ -45,25 +45,30 @@ final class GrindstoneStackRequestAction extends ItemStackRequestAction{
 	public function getRepetitions() : int{ return $this->repetitions; }
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
-		//the recipe net ID became a plain little-endian int here (and only here) in 1.26.40
-		$recipeId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? LE::readSignedInt($in) : CommonTypes::readRecipeNetId($in);
-		$repairCost = VarInt::readSignedInt($in); //WHY!!!!
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$recipeId = LE::readSignedInt($in);
 			$repetitions = Byte::readUnsigned($in);
+			$repairCost = VarInt::readSignedInt($in);
+		}else{
+			$recipeId = CommonTypes::readRecipeNetId($in);
+			$repairCost = VarInt::readSignedInt($in); //WHY!!!!
+			$repetitions = $protocolId >= ProtocolInfo::PROTOCOL_1_21_20 ? Byte::readUnsigned($in) : 0;
 		}
 
-		return new self($recipeId, $repairCost, $repetitions ?? 0);
+		return new self($recipeId, $repairCost, $repetitions);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			LE::writeSignedInt($out, $this->recipeId);
+			Byte::writeUnsigned($out, $this->repetitions);
+			VarInt::writeSignedInt($out, $this->repairCost);
 		}else{
 			CommonTypes::writeRecipeNetId($out, $this->recipeId);
-		}
-		VarInt::writeSignedInt($out, $this->repairCost);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
-			Byte::writeUnsigned($out, $this->repetitions);
+			VarInt::writeSignedInt($out, $this->repairCost);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+				Byte::writeUnsigned($out, $this->repetitions);
+			}
 		}
 	}
 }

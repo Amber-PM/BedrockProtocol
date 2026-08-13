@@ -51,9 +51,22 @@ final class ItemInteractionData{
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$requestId = VarInt::readSignedInt($in);
 		$requestChangedSlots = [];
-		//as of 1.26.40 the changed slots are a proper optional instead of being tied to the request id
-		$hasChangedSlots = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? CommonTypes::getBool($in) : $requestId !== 0;
-		if($hasChangedSlots){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			if(CommonTypes::getBool($in)){
+				$len = VarInt::readUnsignedInt($in);
+				for($i = 0; $i < $len; ++$i){
+					$requestChangedSlots[] = InventoryTransactionChangedSlotsHack::read($in);
+				}
+			}
+			$transactionData = new UseItemTransactionData();
+			CommonTypes::readOptional($in, fn(ByteBufferReader $in) => CommonTypes::readOptional($in, function(ByteBufferReader $in) use ($transactionData, $protocolId) : bool{
+				$transactionData->decodeAuthInput($in, $protocolId);
+				return true;
+			}));
+			return new ItemInteractionData($requestId, $requestChangedSlots, $transactionData);
+		}
+
+		if($requestId !== 0){
 			$len = VarInt::readUnsignedInt($in);
 			for($i = 0; $i < $len; ++$i){
 				$requestChangedSlots[] = InventoryTransactionChangedSlotsHack::read($in);
@@ -67,11 +80,18 @@ final class ItemInteractionData{
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->requestId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::putBool($out, $hasChangedSlots = count($this->requestChangedSlots) > 0);
-		}else{
-			$hasChangedSlots = $this->requestId !== 0;
+			CommonTypes::putBool($out, $this->requestId !== 0);
+			if($this->requestId !== 0){
+				VarInt::writeUnsignedInt($out, count($this->requestChangedSlots));
+				foreach($this->requestChangedSlots as $changedSlot){
+					$changedSlot->write($out);
+				}
+			}
+			CommonTypes::writeOptional($out, $this->transactionData, fn(ByteBufferWriter $out, UseItemTransactionData $v) => CommonTypes::writeOptional($out, $v, fn(ByteBufferWriter $out, UseItemTransactionData $v) => $v->encodeAuthInput($out, $protocolId)));
+			return;
 		}
-		if($hasChangedSlots){
+
+		if($this->requestId !== 0){
 			VarInt::writeUnsignedInt($out, count($this->requestChangedSlots));
 			foreach($this->requestChangedSlots as $changedSlot){
 				$changedSlot->write($out);

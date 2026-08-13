@@ -26,17 +26,14 @@ class TransferPacket extends DataPacket implements ClientboundPacket{
 	public string $address;
 	public int $port = 19132;
 	public bool $reloadWorld;
-	/** Identifies the gathering being joined on the target server. >= ProtocolInfo::PROTOCOL_1_26_40 */
 	public ?GatheringJoinInfo $gatheringJoinInfo = null;
 
-	/**
-	 * @generate-create-func
-	 */
-	public static function create(string $address, int $port, bool $reloadWorld) : self{
+	public static function create(string $address, int $port, bool $reloadWorld, ?GatheringJoinInfo $gatheringJoinInfo = null) : self{
 		$result = new self;
 		$result->address = $address;
 		$result->port = $port;
 		$result->reloadWorld = $reloadWorld;
+		$result->gatheringJoinInfo = $gatheringJoinInfo;
 		return $result;
 	}
 

@@ -58,40 +58,49 @@ final class CraftRecipeAutoStackRequestAction extends ItemStackRequestAction{
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::readRecipeNetId($in);
-		$repetitions = Byte::readUnsigned($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20 && $protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			//v2168 sends the repetitions property only once (the count duplication was removed)
+			$repetitions = Byte::readUnsigned($in);
+			$repetitions2 = 0;
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$repetitions = Byte::readUnsigned($in);
 			$repetitions2 = Byte::readUnsigned($in); //repetitions property is sent twice, mojang...
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_17_10){
+			$repetitions = Byte::readUnsigned($in);
 		}
 		$ingredients = [];
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			//the ingredient list gained a varint length and the descriptors are framed differently here
 			for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
-				$ingredients[] = CommonTypes::getStackRequestRecipeIngredient($in);
-			}
-		}else{
-			for($i = 0, $count = Byte::readUnsigned($in); $i < $count; ++$i){
 				$ingredients[] = CommonTypes::getRecipeIngredient($in, $protocolId);
 			}
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
+			for($i = 0, $count = Byte::readUnsigned($in); $i < $count; ++$i){
+				$ingredients[] = CommonTypes::getRecipeIngredient($in);
+			}
 		}
-		return new self($recipeId, $repetitions, $repetitions2 ?? 0, $ingredients);
+		return new self($recipeId, $repetitions ?? 1, $repetitions2 ?? 0, $ingredients);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeRecipeNetId($out, $this->recipeId);
-		Byte::writeUnsigned($out, $this->repetitions);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20 && $protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			Byte::writeUnsigned($out, $this->repetitions);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			Byte::writeUnsigned($out, $this->repetitions);
 			Byte::writeUnsigned($out, $this->repetitions2);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_17_10){
+			Byte::writeUnsigned($out, $this->repetitions);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			VarInt::writeUnsignedInt($out, count($this->ingredients));
 			foreach($this->ingredients as $ingredient){
-				CommonTypes::putStackRequestRecipeIngredient($out, $ingredient);
+				CommonTypes::putRecipeIngredient($out, $ingredient, $protocolId);
 			}
-			return;
-		}
-		Byte::writeUnsigned($out, count($this->ingredients));
-		foreach($this->ingredients as $ingredient){
-			CommonTypes::putRecipeIngredient($out, $protocolId, $ingredient);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
+			Byte::writeUnsigned($out, count($this->ingredients));
+			foreach($this->ingredients as $ingredient){
+				CommonTypes::putRecipeIngredient($out, $ingredient);
+			}
 		}
 	}
 }

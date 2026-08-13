@@ -65,7 +65,7 @@ final class FurnaceRecipe extends RecipeWithTypeId{
 		if($this->getTypeId() === CraftingDataPacket::ENTRY_FURNACE_DATA){
 			VarInt::writeSignedInt($out, $this->inputMeta);
 		}
-		CommonTypes::putItemStackWithoutStackId($out, $protocolId, $this->result);
+		CommonTypes::putItemStackWithoutStackId($out, $this->result, $protocolId);
 		CommonTypes::putString($out, $this->blockName);
 	}
 }

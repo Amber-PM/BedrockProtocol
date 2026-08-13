@@ -48,11 +48,11 @@ class MobArmorEquipmentPacket extends DataPacket implements ClientboundPacket, S
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
-			$this->head = CommonTypes::getNetworkItemStackDescriptor($in);
-			$this->chest = CommonTypes::getNetworkItemStackDescriptor($in);
-			$this->legs = CommonTypes::getNetworkItemStackDescriptor($in);
-			$this->feet = CommonTypes::getNetworkItemStackDescriptor($in);
-			$this->body = CommonTypes::getNetworkItemStackDescriptor($in);
+			$this->head = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
+			$this->chest = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
+			$this->legs = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
+			$this->feet = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
+			$this->body = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
 		}else{
 			$this->head = CommonTypes::getItemStackWrapper($in, $protocolId);
 			$this->chest = CommonTypes::getItemStackWrapper($in, $protocolId);
@@ -67,18 +67,18 @@ class MobArmorEquipmentPacket extends DataPacket implements ClientboundPacket, S
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->head);
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->chest);
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->legs);
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->feet);
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->body);
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->head, $protocolId);
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->chest, $protocolId);
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->legs, $protocolId);
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->feet, $protocolId);
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->body, $protocolId);
 		}else{
-			CommonTypes::putItemStackWrapper($out, $protocolId, $this->head);
-			CommonTypes::putItemStackWrapper($out, $protocolId, $this->chest);
-			CommonTypes::putItemStackWrapper($out, $protocolId, $this->legs);
-			CommonTypes::putItemStackWrapper($out, $protocolId, $this->feet);
+			CommonTypes::putItemStackWrapper($out, $this->head, $protocolId);
+			CommonTypes::putItemStackWrapper($out, $this->chest, $protocolId);
+			CommonTypes::putItemStackWrapper($out, $this->legs, $protocolId);
+			CommonTypes::putItemStackWrapper($out, $this->feet, $protocolId);
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
-				CommonTypes::putItemStackWrapper($out, $protocolId, $this->body);
+				CommonTypes::putItemStackWrapper($out, $this->body, $protocolId);
 			}
 		}
 	}

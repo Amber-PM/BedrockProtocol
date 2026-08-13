@@ -30,18 +30,19 @@ final class SubChunkPacketEntryWithoutCache{
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$base = SubChunkPacketEntryCommon::read($in, $protocolId, false);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40 && CommonTypes::getBool($in)){
-			//both entry types share one encoding as of 1.26.40, so the blob hash slot is always there
-			LE::readUnsignedLong($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			// optionalNull blobId — absent when cache disabled
+			if(CommonTypes::getBool($in)){
+				LE::readUnsignedLong($in);
+			}
 		}
-
 		return new self($base);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		$this->base->write($out, $protocolId, false);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::putBool($out, false);
+			CommonTypes::putBool($out, false); // no blobId
 		}
 	}
 }

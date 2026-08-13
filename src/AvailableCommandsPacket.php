@@ -172,6 +172,120 @@ final class AvailableCommandsPacket extends DataPacket implements ClientboundPac
 	}
 
 	public static function convertArg(int $protocolId, int $type) : int{
+		if($protocolId < ProtocolInfo::PROTOCOL_1_13_0){
+			return match($type){
+				self::ARG_TYPE_FLOAT => 0x02,
+				self::ARG_TYPE_VALUE => 0x03,
+				self::ARG_TYPE_WILDCARD_INT => 0x04,
+				self::ARG_TYPE_OPERATOR => 0x05,
+				self::ARG_TYPE_TARGET => 0x06,
+				self::ARG_TYPE_WILDCARD_TARGET => 0x07,
+				self::ARG_TYPE_FILEPATH => 0x0e,
+				self::ARG_TYPE_STRING => 0x1b,
+				self::ARG_TYPE_POSITION => 0x1d,
+				self::ARG_TYPE_MESSAGE => 0x20,
+				self::ARG_TYPE_RAWTEXT => 0x22,
+				self::ARG_TYPE_JSON => 0x25,
+				self::ARG_TYPE_COMMAND => 0x2c,
+				default => $type,
+			};
+		}
+		if($protocolId < ProtocolInfo::PROTOCOL_1_16_100){
+			return match($type){
+				self::ARG_TYPE_FLOAT => 0x02,
+				self::ARG_TYPE_VALUE => 0x03,
+				self::ARG_TYPE_WILDCARD_INT => 0x04,
+				self::ARG_TYPE_OPERATOR => 0x05,
+				self::ARG_TYPE_TARGET => 0x06,
+				self::ARG_TYPE_WILDCARD_TARGET => 0x07,
+				self::ARG_TYPE_FILEPATH => 0x0e,
+				self::ARG_TYPE_STRING => 0x1d,
+				self::ARG_TYPE_POSITION => 0x26,
+				self::ARG_TYPE_MESSAGE => 0x29,
+				self::ARG_TYPE_RAWTEXT => 0x2b,
+				self::ARG_TYPE_JSON => 0x2f,
+				self::ARG_TYPE_COMMAND => 0x36,
+				default => $type,
+			};
+		}
+		if($protocolId < ProtocolInfo::PROTOCOL_1_16_210){
+			return match($type){
+				self::ARG_TYPE_FLOAT => 0x02,
+				self::ARG_TYPE_VALUE => 0x03,
+				self::ARG_TYPE_WILDCARD_INT => 0x04,
+				self::ARG_TYPE_OPERATOR => 0x05,
+				self::ARG_TYPE_TARGET => 0x06,
+				self::ARG_TYPE_WILDCARD_TARGET => 0x07,
+				self::ARG_TYPE_FILEPATH => 0x0f,
+				self::ARG_TYPE_STRING => 0x1f,
+				self::ARG_TYPE_POSITION => 0x28,
+				self::ARG_TYPE_MESSAGE => 0x2b,
+				self::ARG_TYPE_RAWTEXT => 0x2d,
+				self::ARG_TYPE_JSON => 0x31,
+				self::ARG_TYPE_COMMAND => 0x38,
+				default => $type,
+			};
+		}
+		if($protocolId < ProtocolInfo::PROTOCOL_1_18_30){
+			return match($type){
+				self::ARG_TYPE_TARGET => 0x07,
+				self::ARG_TYPE_WILDCARD_TARGET => 0x08,
+				self::ARG_TYPE_FILEPATH => 0x10,
+				self::ARG_TYPE_STRING => 0x20,
+				self::ARG_TYPE_POSITION => 0x28,
+				self::ARG_TYPE_MESSAGE => 0x2c,
+				self::ARG_TYPE_RAWTEXT => 0x2e,
+				self::ARG_TYPE_JSON => 0x32,
+				self::ARG_TYPE_COMMAND => 0x3f,
+				default => $type,
+			};
+		}
+		if($protocolId < ProtocolInfo::PROTOCOL_1_19_0){
+			return match($type){
+				self::ARG_TYPE_TARGET => 0x07,
+				self::ARG_TYPE_WILDCARD_TARGET => 0x09,
+				self::ARG_TYPE_FILEPATH => 0x10,
+				self::ARG_TYPE_EQUIPMENT_SLOT => 0x25,
+				self::ARG_TYPE_STRING => 0x26,
+				self::ARG_TYPE_INT_POSITION => 0x2e,
+				self::ARG_TYPE_POSITION => 0x2f,
+				self::ARG_TYPE_MESSAGE => 0x32,
+				self::ARG_TYPE_RAWTEXT => 0x34,
+				self::ARG_TYPE_JSON => 0x38,
+				self::ARG_TYPE_COMMAND => 0x45,
+				default => $type,
+			};
+		}
+		if($protocolId < ProtocolInfo::PROTOCOL_1_19_80){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_19_70){
+				return match($type){
+					self::ARG_TYPE_EQUIPMENT_SLOT => 0x26,
+					self::ARG_TYPE_STRING => 0x27,
+					self::ARG_TYPE_INT_POSITION => 0x2f,
+					self::ARG_TYPE_POSITION => 0x30,
+					self::ARG_TYPE_MESSAGE => 0x32,
+					self::ARG_TYPE_RAWTEXT => 0x35,
+					self::ARG_TYPE_JSON => 0x39,
+					self::ARG_TYPE_BLOCK_STATES => 0x43,
+					self::ARG_TYPE_COMMAND => 0x45,
+					default => $type,
+				};
+			}
+
+			return match($type){
+				self::ARG_TYPE_EQUIPMENT_SLOT => 0x26,
+				self::ARG_TYPE_STRING => 0x27,
+				self::ARG_TYPE_INT_POSITION => 0x2f,
+				self::ARG_TYPE_POSITION => 0x30,
+				self::ARG_TYPE_MESSAGE => 0x33,
+				self::ARG_TYPE_RAWTEXT => 0x35,
+				self::ARG_TYPE_JSON => 0x39,
+				self::ARG_TYPE_BLOCK_STATES => 0x43,
+				self::ARG_TYPE_COMMAND => 0x46,
+				default => $type,
+			};
+		}
+
 		if($protocolId <= ProtocolInfo::PROTOCOL_1_20_60){
 			return match($type){
 				self::ARG_TYPE_EQUIPMENT_SLOT => 43,

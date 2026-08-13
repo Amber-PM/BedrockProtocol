@@ -53,14 +53,19 @@ class SubChunkPacket extends DataPacket implements ClientboundPacket{
 	public function getEntries() : ListWithBlobHashes|ListWithoutBlobHashes{ return $this->entries; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$cacheEnabled = CommonTypes::getBool($in);
+		$newSubChunkFormat = $protocolId >= ProtocolInfo::PROTOCOL_1_18_10;
+		$cacheEnabled = $newSubChunkFormat ? CommonTypes::getBool($in) : $protocolId === ProtocolInfo::PROTOCOL_1_18_0;
 		$this->dimension = VarInt::readSignedInt($in);
-		//sub-chunk positions became fixed-width ints in 1.26.40, and the entry list a varint-prefixed one
-		$this->baseSubChunkPosition = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
-			SubChunkPosition::readFixedInts($in) :
-			SubChunkPosition::readVarInts($in);
-
-		$count = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$this->baseSubChunkPosition = SubChunkPosition::readFixedInts($in);
+			$count = VarInt::readUnsignedInt($in);
+		}elseif($newSubChunkFormat){
+			$this->baseSubChunkPosition = SubChunkPosition::readVarInts($in);
+			$count = LE::readUnsignedInt($in);
+		}else{
+			$this->baseSubChunkPosition = new SubChunkPosition(0, 0, 0);
+			$count = 1;
+		}
 		if($cacheEnabled){
 			$entries = [];
 			for($i = 0; $i < $count; $i++){
@@ -77,14 +82,21 @@ class SubChunkPacket extends DataPacket implements ClientboundPacket{
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		CommonTypes::putBool($out, $this->entries instanceof ListWithBlobHashes);
+		$newSubChunkFormat = $protocolId >= ProtocolInfo::PROTOCOL_1_18_10;
+		if($newSubChunkFormat){
+			CommonTypes::putBool($out, $this->entries instanceof ListWithBlobHashes);
+		}elseif($this->entries instanceof ListWithBlobHashes && $protocolId !== ProtocolInfo::PROTOCOL_1_18_0){
+			throw new \InvalidArgumentException("SubChunkPacket does not support blob hashes before protocol " . ProtocolInfo::PROTOCOL_1_18_0);
+		}
 		VarInt::writeSignedInt($out, $this->dimension);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			$this->baseSubChunkPosition->writeFixedInts($out);
 			VarInt::writeUnsignedInt($out, count($this->entries->getEntries()));
-		}else{
+		}elseif($newSubChunkFormat){
 			$this->baseSubChunkPosition->writeVarInts($out);
 			LE::writeUnsignedInt($out, count($this->entries->getEntries()));
+		}elseif(count($this->entries->getEntries()) !== 1){
+			throw new \InvalidArgumentException("Legacy SubChunkPacket must contain exactly one entry");
 		}
 
 		foreach($this->entries->getEntries() as $entry){

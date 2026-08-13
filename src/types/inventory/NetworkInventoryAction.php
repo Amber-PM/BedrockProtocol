@@ -29,6 +29,7 @@ class NetworkInventoryAction{
 	public const SOURCE_GLOBAL = 1;
 	public const SOURCE_WORLD = 2; //drop/pickup item entity
 	public const SOURCE_CREATIVE = 3;
+	public const SOURCE_CRAFT_SLOT = 100;
 	public const SOURCE_TODO = 99999;
 
 	/**
@@ -67,6 +68,7 @@ class NetworkInventoryAction{
 	public int $inventorySlot;
 	public ItemStackWrapper $oldItem;
 	public ItemStackWrapper $newItem;
+	public ?int $newItemStackId = null;
 
 	/**
 	 * @return $this
@@ -74,73 +76,105 @@ class NetworkInventoryAction{
 	 * @throws DataDecodeException
 	 * @throws PacketDecodeException
 	 */
-	public function readAuthInput(ByteBufferReader $in, int $protocolId) : NetworkInventoryAction{
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			//as of 1.26.40 both paths share the same encoding
-			return $this->readTransaction($in, $protocolId);
-		}
-
+	public function readAuthInput(ByteBufferReader $in, int $protocolId, bool $hasItemStackIds = false) : NetworkInventoryAction{
 		$this->sourceType = VarInt::readUnsignedInt($in);
 
-		switch($this->sourceType){
-			case self::SOURCE_CONTAINER:
-				$this->windowId = VarInt::readSignedInt($in);
-				break;
-			case self::SOURCE_WORLD:
-				$this->sourceFlags = VarInt::readUnsignedInt($in);
-				break;
-			case self::SOURCE_CREATIVE:
-				break;
-			case self::SOURCE_TODO:
-				$this->windowId = VarInt::readSignedInt($in);
-				break;
-			default:
-				throw new PacketDecodeException("Unknown inventory action source type $this->sourceType");
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$this->windowId = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => CommonTypes::readOptional($in, Byte::readSigned(...)));
+			$this->sourceFlags = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => CommonTypes::readOptional($in, VarInt::readUnsignedInt(...)));
+		}else{
+			switch($this->sourceType){
+				case self::SOURCE_CONTAINER:
+					$this->windowId = VarInt::readSignedInt($in);
+					break;
+				case self::SOURCE_WORLD:
+					$this->sourceFlags = VarInt::readUnsignedInt($in);
+					break;
+				case self::SOURCE_CREATIVE:
+					break;
+				case self::SOURCE_CRAFT_SLOT:
+				case self::SOURCE_TODO:
+					$this->windowId = VarInt::readSignedInt($in);
+					break;
+				default:
+					throw new PacketDecodeException("Unknown inventory action source type $this->sourceType");
+			}
 		}
 
 		$this->inventorySlot = VarInt::readUnsignedInt($in);
-		$this->oldItem = CommonTypes::getItemStackWrapper($in, $protocolId);
-		$this->newItem = CommonTypes::getItemStackWrapper($in, $protocolId);
+		$this->oldItem = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+			CommonTypes::getNetworkItemStackDescriptor($in, $protocolId) :
+			CommonTypes::getItemStackWrapper($in, $protocolId);
+		$this->newItem = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+			CommonTypes::getNetworkItemStackDescriptor($in, $protocolId) :
+			CommonTypes::getItemStackWrapper($in, $protocolId);
+		if($protocolId < ProtocolInfo::PROTOCOL_1_16_220 && $hasItemStackIds){
+			$this->newItemStackId = CommonTypes::readServerItemStackId($in);
+		}
 
 		return $this;
 	}
 
-	public function writeAuthInput(ByteBufferWriter $out, int $protocolId) : void{
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$this->writeTransaction($out, $protocolId);
-			return;
-		}
-
+	public function writeAuthInput(ByteBufferWriter $out, int $protocolId, bool $hasItemStackIds = false) : void{
 		VarInt::writeUnsignedInt($out, $this->sourceType);
 
-		switch($this->sourceType){
-			case self::SOURCE_CONTAINER:
-				if($this->windowId === null){
-					throw new \LogicException("WindowID must be set for SOURCE_CONTAINER");
-				}
-				VarInt::writeSignedInt($out, $this->windowId);
-				break;
-			case self::SOURCE_WORLD:
-				if($this->sourceFlags === null){
-					throw new \LogicException("SourceFlags must be set for SOURCE_WORLD");
-				}
-				VarInt::writeUnsignedInt($out, $this->sourceFlags);
-				break;
-			case self::SOURCE_CREATIVE:
-				break;
-			case self::SOURCE_TODO:
-				if($this->windowId === null){
-					throw new \LogicException("WindowID must be set for SOURCE_TODO");
-				}
-				VarInt::writeSignedInt($out, $this->windowId);
-				break;
-			default:
-				throw new \InvalidArgumentException("Unknown inventory action source type $this->sourceType");
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			Byte::writeUnsigned($out, 1);
+			CommonTypes::writeOptional(
+				$out,
+				match($this->sourceType){
+					self::SOURCE_CONTAINER, self::SOURCE_TODO => $this->windowId ?? throw new \LogicException("WindowID must be set for inventory source type $this->sourceType"),
+					default => null,
+				},
+				Byte::writeSigned(...)
+			);
+			Byte::writeUnsigned($out, 1);
+			CommonTypes::writeOptional(
+				$out,
+				$this->sourceType === self::SOURCE_WORLD ? $this->sourceFlags ?? throw new \LogicException("SourceFlags must be set for SOURCE_WORLD") : null,
+				VarInt::writeUnsignedInt(...)
+			);
+		}else{
+			switch($this->sourceType){
+				case self::SOURCE_CONTAINER:
+					if($this->windowId === null){
+						throw new \LogicException("WindowID must be set for SOURCE_CONTAINER");
+					}
+					VarInt::writeSignedInt($out, $this->windowId);
+					break;
+				case self::SOURCE_WORLD:
+					if($this->sourceFlags === null){
+						throw new \LogicException("SourceFlags must be set for SOURCE_WORLD");
+					}
+					VarInt::writeUnsignedInt($out, $this->sourceFlags);
+					break;
+				case self::SOURCE_CREATIVE:
+					break;
+				case self::SOURCE_TODO:
+					if($this->windowId === null){
+						throw new \LogicException("WindowID must be set for SOURCE_TODO");
+					}
+					VarInt::writeSignedInt($out, $this->windowId);
+					break;
+				default:
+					throw new \InvalidArgumentException("Unknown inventory action source type $this->sourceType");
+			}
 		}
 
 		VarInt::writeUnsignedInt($out, $this->inventorySlot);
-		CommonTypes::putItemStackWrapper($out, $protocolId, $this->oldItem);
-		CommonTypes::putItemStackWrapper($out, $protocolId, $this->newItem);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->oldItem, $protocolId);
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->newItem, $protocolId);
+		}else{
+			CommonTypes::putItemStackWrapper($out, $this->oldItem, $protocolId);
+			CommonTypes::putItemStackWrapper($out, $this->newItem, $protocolId);
+		}
+		if($protocolId < ProtocolInfo::PROTOCOL_1_16_220 && $hasItemStackIds){
+			if($this->newItemStackId === null){
+				throw new \LogicException("Item stack ID for newItem must be provided");
+			}
+			CommonTypes::writeServerItemStackId($out, $this->newItemStackId);
+		}
 	}
 
 	/**
@@ -149,9 +183,9 @@ class NetworkInventoryAction{
 	 * @throws DataDecodeException
 	 * @throws PacketDecodeException
 	 */
-	public function readTransaction(ByteBufferReader $in, int $protocolId) : NetworkInventoryAction{
+	public function readTransaction(ByteBufferReader $in, int $protocolId, bool $hasItemStackIds = false) : NetworkInventoryAction{
 		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
-			return $this->readAuthInput($in, $protocolId);
+			return $this->readAuthInput($in, $protocolId, $hasItemStackIds);
 		}
 
 		$this->sourceType = VarInt::readUnsignedInt($in);
@@ -167,8 +201,8 @@ class NetworkInventoryAction{
 		$this->sourceFlags = CommonTypes::readOptional($in, VarInt::readUnsignedInt(...));
 
 		$this->inventorySlot = VarInt::readUnsignedInt($in);
-		$this->oldItem = CommonTypes::getNetworkItemStackDescriptor($in);
-		$this->newItem = CommonTypes::getNetworkItemStackDescriptor($in);
+		$this->oldItem = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
+		$this->newItem = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
 
 		return $this;
 	}
@@ -191,7 +225,7 @@ class NetworkInventoryAction{
 		CommonTypes::writeOptional($out, $this->sourceFlags, VarInt::writeUnsignedInt(...));
 
 		VarInt::writeUnsignedInt($out, $this->inventorySlot);
-		CommonTypes::putNetworkItemStackDescriptor($out, $this->oldItem);
-		CommonTypes::putNetworkItemStackDescriptor($out, $this->newItem);
+		CommonTypes::putNetworkItemStackDescriptor($out, $this->oldItem, $protocolId);
+		CommonTypes::putNetworkItemStackDescriptor($out, $this->newItem, $protocolId);
 	}
 }

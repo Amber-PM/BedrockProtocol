@@ -21,26 +21,26 @@ final class ClientData{
 
 	/**
 	 * @var ClientDataAnimationFrame[]
-	 * @required
+	 * >= PROTOCOL_1_13_0
 	 */
-	public array $AnimatedImageData;
+	public array $AnimatedImageData = [];
 
-	/** @required */
+	/** >= PROTOCOL_1_14_60 */
 	public string $ArmSize;
 
 	/** @required */
 	public string $CapeData;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public string $CapeId;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public int $CapeImageHeight;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public int $CapeImageWidth;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public bool $CapeOnClassicSkin;
 
 	/** >= ProtocolInfo::PROTOCOL_1_26_30 */
@@ -52,8 +52,8 @@ final class ClientData{
 	/** @required */
 	public int $ClientRandomId;
 
-	/** @required */
-	public bool $CompatibleWithClientSideChunkGen;
+	/** >= ProtocolInfo::PROTOCOL_1_19_80 */
+	public bool $CompatibleWithClientSideChunkGen = false;
 
 	/** @required */
 	public int $CurrentInputMode;
@@ -83,7 +83,7 @@ final class ClientData{
 	public int $GuiScale;
 
 	/** <= ProtocolInfo::PROTOCOL_1_26_20 */
-	public bool $IsEditorMode;
+	public bool $IsEditorMode = false;
 
 	/** @required */
 	public string $LanguageCode;
@@ -101,24 +101,17 @@ final class ClientData{
 	public bool $IsPartyLeader;
 
 	/**
-	 * Client-generated hash of the equipped persona skin.
-	 *
-	 * >= ProtocolInfo::PROTOCOL_1_26_40
-	 */
-	public string $ProfileHash;
-
-	/**
 	 * @var ClientDataPersonaSkinPiece[]
-	 * @required
+	 * >= PROTOCOL_1_14_60
 	 */
 	public array $PersonaPieces;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public bool $PersonaSkin;
 
 	/**
 	 * @var ClientDataPersonaPieceTintColor[]
-	 * @required
+	 * >= PROTOCOL_1_14_60
 	 */
 	public array $PieceTintColors;
 
@@ -145,31 +138,37 @@ final class ClientData{
 	/** @required */
 	public string $ServerAddress;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public string $SkinAnimationData;
 
-	/** @required */
+	/** >= PROTOCOL_1_14_60 */
 	public string $SkinColor;
 
 	/** @required */
 	public string $SkinData;
 
-	/** @required */
+	/** <= PROTOCOL_1_12_0 */
+	public string $SkinGeometryName;
+
+	/** <= PROTOCOL_1_12_0 */
+	public string $SkinGeometry;
+
+	/** >= PROTOCOL_1_13_0 */
 	public string $SkinGeometryData;
 
-	/** @required */
+	/** >= ProtocolInfo::PROTOCOL_1_17_30 */
 	public string $SkinGeometryDataEngineVersion;
 
 	/** @required */
 	public string $SkinId;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public int $SkinImageHeight;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public int $SkinImageWidth;
 
-	/** @required */
+	/** >= PROTOCOL_1_13_0 */
 	public string $SkinResourcePatch;
 
 	/** @required */
@@ -178,8 +177,14 @@ final class ClientData{
 	/** <= ProtocolInfo::PROTOCOL_1_21_80 */
 	public bool $ThirdPartyNameOnly;
 
-	/** @required */
-	public bool $TrustedSkin;
+	/** >= ProtocolInfo::PROTOCOL_1_19_20 */
+	public bool $TrustedSkin = false;
+
+	/** >= ProtocolInfo::PROTOCOL_1_26_40 */
+	public string $ProfileHash = "";
+
+	/** >= ProtocolInfo::PROTOCOL_1_26_40 */
+	public string $Nonce = "";
 
 	/** @required */
 	public int $UIProfile;

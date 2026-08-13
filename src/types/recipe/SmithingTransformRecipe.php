@@ -16,6 +16,7 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
 
@@ -24,7 +25,7 @@ final class SmithingTransformRecipe extends RecipeWithTypeId{
 	public function __construct(
 		int $typeId,
 		private string $recipeId,
-		private RecipeIngredient $template,
+		private ?RecipeIngredient $template,
 		private RecipeIngredient $input,
 		private RecipeIngredient $addition,
 		private ItemStack $output,
@@ -36,7 +37,7 @@ final class SmithingTransformRecipe extends RecipeWithTypeId{
 
 	public function getRecipeId() : string{ return $this->recipeId; }
 
-	public function getTemplate() : RecipeIngredient{ return $this->template; }
+	public function getTemplate() : ?RecipeIngredient{ return $this->template; }
 
 	public function getInput() : RecipeIngredient{ return $this->input; }
 
@@ -50,9 +51,11 @@ final class SmithingTransformRecipe extends RecipeWithTypeId{
 
 	public static function decode(int $typeId, ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::getString($in);
-		$template = CommonTypes::getRecipeIngredient($in, $protocolId);
-		$input = CommonTypes::getRecipeIngredient($in, $protocolId);
-		$addition = CommonTypes::getRecipeIngredient($in, $protocolId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
+			$template = RecipeIngredient::read($in, $protocolId);
+		}
+		$input = RecipeIngredient::read($in, $protocolId);
+		$addition = RecipeIngredient::read($in, $protocolId);
 		$output = CommonTypes::getItemStackWithoutStackId($in, $protocolId);
 		$blockName = CommonTypes::getString($in);
 		$recipeNetId = CommonTypes::readRecipeNetId($in);
@@ -60,7 +63,7 @@ final class SmithingTransformRecipe extends RecipeWithTypeId{
 		return new self(
 			$typeId,
 			$recipeId,
-			$template,
+			$template ?? null,
 			$input,
 			$addition,
 			$output,
@@ -71,10 +74,12 @@ final class SmithingTransformRecipe extends RecipeWithTypeId{
 
 	public function encode(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->recipeId);
-		CommonTypes::putRecipeIngredient($out, $protocolId, $this->template);
-		CommonTypes::putRecipeIngredient($out, $protocolId, $this->input);
-		CommonTypes::putRecipeIngredient($out, $protocolId, $this->addition);
-		CommonTypes::putItemStackWithoutStackId($out, $protocolId, $this->output);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
+			($this->template ?? new RecipeIngredient(null, 0))->write($out, $protocolId);
+		}
+		$this->input->write($out, $protocolId);
+		$this->addition->write($out, $protocolId);
+		CommonTypes::putItemStackWithoutStackId($out, $this->output, $protocolId);
 		CommonTypes::putString($out, $this->blockName);
 		CommonTypes::writeRecipeNetId($out, $this->recipeNetId);
 	}

@@ -45,27 +45,15 @@ class ResourcePackClientResponsePacket extends DataPacket implements Serverbound
 		return $result;
 	}
 
-	/**
-	 * As of 1.26.40 the status is zero-based and followed by the name of the variant it was sent under. The pack list
-	 * is only sent when packs are actually being requested.
-	 */
-	private const MODERN_STATUS_NAMES = [
-		self::STATUS_REFUSED => "cancel",
-		self::STATUS_SEND_PACKS => "downloading",
-		self::STATUS_HAVE_ALL_PACKS => "downloadingfinished",
-		self::STATUS_COMPLETED => "resourcepackstackfinished",
-	];
-
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->packIds = [];
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			//wire: 0=REFUSED, 1=SEND_PACKS, 2=HAVE_ALL, 3=COMPLETED
 			$this->status = VarInt::readUnsignedInt($in) + 1;
-			if(!isset(self::MODERN_STATUS_NAMES[$this->status])){
-				throw new PacketDecodeException("Unknown resource pack response status $this->status");
-			}
-			CommonTypes::getString($in); //variant name
+			CommonTypes::getString($in); //status response string
+			$this->packIds = [];
 			if($this->status === self::STATUS_SEND_PACKS){
-				for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+				$entryCount = VarInt::readUnsignedInt($in);
+				while($entryCount-- > 0){
 					$this->packIds[] = CommonTypes::getString($in);
 				}
 			}
@@ -74,6 +62,7 @@ class ResourcePackClientResponsePacket extends DataPacket implements Serverbound
 
 		$this->status = Byte::readUnsigned($in);
 		$entryCount = LE::readUnsignedShort($in);
+		$this->packIds = [];
 		while($entryCount-- > 0){
 			$this->packIds[] = CommonTypes::getString($in);
 		}
@@ -81,11 +70,15 @@ class ResourcePackClientResponsePacket extends DataPacket implements Serverbound
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			if(!isset(self::MODERN_STATUS_NAMES[$this->status])){
-				throw new \InvalidArgumentException("Unknown resource pack response status $this->status");
-			}
+			//wire: 0=REFUSED, 1=SEND_PACKS, 2=HAVE_ALL, 3=COMPLETED
 			VarInt::writeUnsignedInt($out, $this->status - 1);
-			CommonTypes::putString($out, self::MODERN_STATUS_NAMES[$this->status]);
+			CommonTypes::putString($out, match($this->status){
+				self::STATUS_REFUSED => "cancel",
+				self::STATUS_SEND_PACKS => "downloading",
+				self::STATUS_HAVE_ALL_PACKS => "downloadingfinished",
+				self::STATUS_COMPLETED => "resourcepackstackfinished",
+				default => "",
+			});
 			if($this->status === self::STATUS_SEND_PACKS){
 				VarInt::writeUnsignedInt($out, count($this->packIds));
 				foreach($this->packIds as $id){

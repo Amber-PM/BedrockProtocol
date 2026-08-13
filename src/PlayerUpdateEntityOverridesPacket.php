@@ -71,18 +71,20 @@ class PlayerUpdateEntityOverridesPacket extends DataPacket implements Clientboun
 	public function getFloatOverrideValue() : ?float{ return $this->floatOverrideValue; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		$this->actorRuntimeId = CommonTypes::getActorUniqueId($in);
 		$this->propertyIndex = VarInt::readUnsignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			//the type is sent twice as of 1.26.40: once as the cereal variant, once as the legacy byte
-			$variant = VarInt::readUnsignedInt($in);
-			$this->updateType = OverrideUpdateType::fromPacket(Byte::readUnsigned($in));
-			if($variant !== $this->updateType->value){
-				throw new PacketDecodeException("Entity override type {$this->updateType->value} does not match variant $variant");
+			$variantType = VarInt::readUnsignedInt($in);
+			$legacyType = Byte::readUnsigned($in);
+			if($variantType !== $legacyType){
+				throw new PacketDecodeException("Mismatched entity override update types $variantType and $legacyType");
 			}
+			$this->updateType = OverrideUpdateType::fromPacket($variantType);
 		}else{
 			$this->updateType = OverrideUpdateType::fromPacket(Byte::readUnsigned($in));
 		}
+		$this->intOverrideValue = null;
+		$this->floatOverrideValue = null;
 		if($this->updateType === OverrideUpdateType::SET_INT_OVERRIDE){
 			$this->intOverrideValue = LE::readSignedInt($in);
 		}elseif($this->updateType === OverrideUpdateType::SET_FLOAT_OVERRIDE){
@@ -91,7 +93,7 @@ class PlayerUpdateEntityOverridesPacket extends DataPacket implements Clientboun
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		CommonTypes::putActorUniqueId($out, $this->actorRuntimeId);
 		VarInt::writeUnsignedInt($out, $this->propertyIndex);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			VarInt::writeUnsignedInt($out, $this->updateType->value);

@@ -46,9 +46,9 @@ final class SmithingTrimRecipe extends RecipeWithTypeId{
 
 	public static function decode(int $typeId, ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::getString($in);
-		$template = CommonTypes::getRecipeIngredient($in, $protocolId);
-		$input = CommonTypes::getRecipeIngredient($in, $protocolId);
-		$addition = CommonTypes::getRecipeIngredient($in, $protocolId);
+		$template = RecipeIngredient::read($in, $protocolId);
+		$input = RecipeIngredient::read($in, $protocolId);
+		$addition = RecipeIngredient::read($in, $protocolId);
 		$blockName = CommonTypes::getString($in);
 		$recipeNetId = CommonTypes::readRecipeNetId($in);
 
@@ -65,9 +65,9 @@ final class SmithingTrimRecipe extends RecipeWithTypeId{
 
 	public function encode(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->recipeId);
-		CommonTypes::putRecipeIngredient($out, $protocolId, $this->template);
-		CommonTypes::putRecipeIngredient($out, $protocolId, $this->input);
-		CommonTypes::putRecipeIngredient($out, $protocolId, $this->addition);
+		$this->template->write($out, $protocolId);
+		$this->input->write($out, $protocolId);
+		$this->addition->write($out, $protocolId);
 		CommonTypes::putString($out, $this->blockName);
 		CommonTypes::writeRecipeNetId($out, $this->recipeNetId);
 	}

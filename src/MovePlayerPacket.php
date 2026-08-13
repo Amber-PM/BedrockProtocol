@@ -96,15 +96,18 @@ class MovePlayerPacket extends DataPacket implements ClientboundPacket, Serverbo
 		$this->mode = Byte::readUnsigned($in);
 		$this->onGround = CommonTypes::getBool($in);
 		$this->ridingActorRuntimeId = CommonTypes::getActorRuntimeId($in);
-		//as of 1.26.40 the teleport data is a proper optional instead of being tied to the mode
-		$hasTeleportData = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
-			CommonTypes::getBool($in) :
-			$this->mode === MovePlayerPacket::MODE_TELEPORT;
-		if($hasTeleportData){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			if(CommonTypes::getBool($in)){
+				$this->teleportCause = LE::readSignedInt($in);
+				$this->teleportItem = LE::readSignedInt($in);
+			}
+		}elseif($this->mode === MovePlayerPacket::MODE_TELEPORT){
 			$this->teleportCause = LE::readSignedInt($in);
 			$this->teleportItem = LE::readSignedInt($in);
 		}
-		$this->tick = VarInt::readUnsignedLong($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_100){
+			$this->tick = VarInt::readUnsignedLong($in);
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -116,15 +119,20 @@ class MovePlayerPacket extends DataPacket implements ClientboundPacket, Serverbo
 		Byte::writeUnsigned($out, $this->mode);
 		CommonTypes::putBool($out, $this->onGround);
 		CommonTypes::putActorRuntimeId($out, $this->ridingActorRuntimeId);
-		$hasTeleportData = $this->mode === MovePlayerPacket::MODE_TELEPORT;
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::putBool($out, $hasTeleportData);
-		}
-		if($hasTeleportData){
+			$isTeleportMode = $this->mode === MovePlayerPacket::MODE_TELEPORT;
+			CommonTypes::putBool($out, $isTeleportMode);
+			if($isTeleportMode){
+				LE::writeSignedInt($out, $this->teleportCause);
+				LE::writeSignedInt($out, $this->teleportItem);
+			}
+		}elseif($this->mode === MovePlayerPacket::MODE_TELEPORT){
 			LE::writeSignedInt($out, $this->teleportCause);
 			LE::writeSignedInt($out, $this->teleportItem);
 		}
-		VarInt::writeUnsignedLong($out, $this->tick);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_100){
+			VarInt::writeUnsignedLong($out, $this->tick);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

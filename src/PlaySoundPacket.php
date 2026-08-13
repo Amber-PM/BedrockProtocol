@@ -30,17 +30,9 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 	public float $z;
 	public float $volume;
 	public float $pitch;
-	public ?int $serverSoundHandle = null;
-	/**
-	 * How many extra times to repeat the sound after the first playback; 0 (the default) plays it exactly once.
-	 * -1 loops indefinitely, until the sound is stopped through its server sound handle.
-	 * >= ProtocolInfo::PROTOCOL_1_26_40
-	 */
 	public int $loopCount = 0;
+	public ?int $serverSoundHandle = null;
 
-	/**
-	 * @generate-create-func
-	 */
 	public static function create(
 		string $soundName,
 		float $x,
@@ -49,6 +41,7 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 		float $volume,
 		float $pitch,
 		?int $serverSoundHandle,
+		int $loopCount = 0,
 	) : self{
 		$result = new self;
 		$result->soundName = $soundName;
@@ -58,6 +51,7 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 		$result->volume = $volume;
 		$result->pitch = $pitch;
 		$result->serverSoundHandle = $serverSoundHandle;
+		$result->loopCount = $loopCount;
 		return $result;
 	}
 

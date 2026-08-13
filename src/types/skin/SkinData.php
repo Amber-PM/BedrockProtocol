@@ -16,21 +16,24 @@ namespace pocketmine\network\mcpe\protocol\types\skin;
 
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use Ramsey\Uuid\Uuid;
+use function hexdec;
+use function ltrim;
+use function sprintf;
 
 class SkinData{
+	private const DEFAULT_RESOURCE_PATCH = '{"geometry":{"default":"%s"}}';
 
 	public const ARM_SIZE_SLIM = "slim";
 	public const ARM_SIZE_WIDE = "wide";
 
-	/** As of 1.26.40 the arm size is sent as an enum instead of a string. */
-	public const ARM_SIZE_ID_SLIM = 0;
-	public const ARM_SIZE_ID_WIDE = 1;
+	public const TRUSTED_SKIN_FLAG_UNSET = "unset";
+	public const TRUSTED_SKIN_FLAG_FALSE = "false";
+	public const TRUSTED_SKIN_FLAG_TRUE = "true";
 
-	/** As of 1.26.40 every persona piece tint carries exactly this many colours. */
-	public const PIECE_TINT_COLOR_COUNT = 4;
-
+	private string $resourcePatch;
 	private SkinImage $capeImage;
 	private string $fullSkinId;
+	private string $geometryName;
 
 	/**
 	 * @param SkinAnimation[]         $animations
@@ -40,7 +43,7 @@ class SkinData{
 	public function __construct(
 		private string $skinId,
 		private string $playFabId,
-		private string $resourcePatch,
+		?string $resourcePatch,
 		private SkinImage $skinImage,
 		private array $animations = [],
 		?SkinImage $capeImage = null,
@@ -59,8 +62,12 @@ class SkinData{
 		private bool $personaCapeOnClassic = false,
 		private bool $isPrimaryUser = true,
 		private bool $override = true,
+		?string $geometryName = null,
+		private string $trustedSkinFlag = self::TRUSTED_SKIN_FLAG_TRUE,
 		private string $profileHash = ""
 	){
+		$this->geometryName = $geometryName ?? "geometry.humanoid.custom";
+		$this->resourcePatch = $resourcePatch ?? sprintf(self::DEFAULT_RESOURCE_PATCH, $this->geometryName);
 		$this->capeImage = $capeImage ?? new SkinImage(0, 0, "");
 		//this has to be unique or the client will do stupid things
 		$this->fullSkinId = $fullSkinId ?? Uuid::uuid4()->toString();
@@ -117,6 +124,41 @@ class SkinData{
 		return $this->skinColor;
 	}
 
+	public function getTrustedSkinFlag() : string{
+		return $this->trustedSkinFlag;
+	}
+
+	public function getProfileHash() : string{
+		return $this->profileHash;
+	}
+
+	public static function convertArmSize(string $armSize) : int{
+		return match($armSize){
+			self::ARM_SIZE_SLIM, "slim" => 0,
+			default => 1,
+		};
+	}
+
+	public static function armSizeToString(int $armSize) : string{
+		return $armSize === 0 ? self::ARM_SIZE_SLIM : self::ARM_SIZE_WIDE;
+	}
+
+	public static function convertColor(string $color) : int{
+		$hex = ltrim($color, '#');
+		if($hex === '' || $hex === '0'){
+			return 0;
+		}
+
+		return (int) hexdec($hex);
+	}
+
+	public static function colorToString(int $color) : string{
+		if($color === 0){
+			return "";
+		}
+		return sprintf("#%06X", $color & 0xffffff);
+	}
+
 	/**
 	 * @return PersonaSkinPiece[]
 	 */
@@ -151,10 +193,16 @@ class SkinData{
 		return $this->isVerified;
 	}
 
+	public function getGeometryName() : string{
+		return $this->geometryName;
+	}
+
 	/**
-	 * Client-generated hash of the equipped persona skin. Only sent as of 1.26.40.
+	 * @internal
 	 */
-	public function getProfileHash() : string{ return $this->profileHash; }
+	public function setSkinId(string $skinId) : void{
+		$this->skinId = $skinId;
+	}
 
 	/**
 	 * @internal

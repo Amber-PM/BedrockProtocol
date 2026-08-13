@@ -41,10 +41,11 @@ abstract class TransactionData{
 	 * @throws PacketDecodeException
 	 */
 	final public function decodeTransaction(ByteBufferReader $in, int $protocolId) : void{
+		$hasItemStackIds = $protocolId >= ProtocolInfo::PROTOCOL_1_16_0 && $protocolId < ProtocolInfo::PROTOCOL_1_16_220 && CommonTypes::getBool($in);
 		$actionCount = VarInt::readUnsignedInt($in);
 		$this->actions = [];
 		for($i = 0; $i < $actionCount; ++$i){
-			$this->actions[] = (new NetworkInventoryAction())->readTransaction($in, $protocolId);
+			$this->actions[] = (new NetworkInventoryAction())->readTransaction($in, $protocolId, $hasItemStackIds);
 		}
 		$this->decodeData($in, $protocolId);
 	}
@@ -54,17 +55,11 @@ abstract class TransactionData{
 	 * @throws PacketDecodeException
 	 */
 	final public function decodeAuthInput(ByteBufferReader $in, int $protocolId) : void{
+		$hasItemStackIds = $protocolId >= ProtocolInfo::PROTOCOL_1_16_0 && $protocolId < ProtocolInfo::PROTOCOL_1_16_220 && CommonTypes::getBool($in);
+		$actionCount = VarInt::readUnsignedInt($in);
 		$this->actions = [];
-		//as of 1.26.40 the action list sits inside an optional which is itself inside an always-present optional
-		$hasActions = true;
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$hasActions = CommonTypes::getBool($in) && CommonTypes::getBool($in);
-		}
-		if($hasActions){
-			$actionCount = VarInt::readUnsignedInt($in);
-			for($i = 0; $i < $actionCount; ++$i){
-				$this->actions[] = (new NetworkInventoryAction())->readAuthInput($in, $protocolId);
-			}
+		for($i = 0; $i < $actionCount; ++$i){
+			$this->actions[] = (new NetworkInventoryAction())->readAuthInput($in, $protocolId, $hasItemStackIds);
 		}
 		$this->decodeData($in, $protocolId);
 	}
@@ -76,6 +71,9 @@ abstract class TransactionData{
 	abstract protected function decodeData(ByteBufferReader $in, int $protocolId) : void;
 
 	final public function encodeTransaction(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_0 && $protocolId < ProtocolInfo::PROTOCOL_1_16_220){
+			CommonTypes::putBool($out, false);
+		}
 		VarInt::writeUnsignedInt($out, count($this->actions));
 		foreach($this->actions as $action){
 			$action->writeTransaction($out, $protocolId);
@@ -84,16 +82,12 @@ abstract class TransactionData{
 	}
 
 	final public function encodeAuthInput(ByteBufferWriter $out, int $protocolId) : void{
-		$hasActions = true;
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::putBool($out, true);
-			CommonTypes::putBool($out, $hasActions = count($this->actions) > 0);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_0 && $protocolId < ProtocolInfo::PROTOCOL_1_16_220){
+			CommonTypes::putBool($out, false);
 		}
-		if($hasActions){
-			VarInt::writeUnsignedInt($out, count($this->actions));
-			foreach($this->actions as $action){
-				$action->writeAuthInput($out, $protocolId);
-			}
+		VarInt::writeUnsignedInt($out, count($this->actions));
+		foreach($this->actions as $action){
+			$action->writeAuthInput($out, $protocolId);
 		}
 		$this->encodeData($out, $protocolId);
 	}

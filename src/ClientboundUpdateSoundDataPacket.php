@@ -18,28 +18,21 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
-use pocketmine\network\mcpe\protocol\types\SoundDataUpdate;
+use pocketmine\network\mcpe\protocol\types\sound\SoundData;
 
 class ClientboundUpdateSoundDataPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::CLIENTBOUND_UPDATE_SOUND_DATA_PACKET;
 
-	/**
-	 * As of 1.26.40 the packet carries one optional slot per update kind. The slot doesn't constrain which update it
-	 * holds, so they're kept as a plain list here.
-	 */
-	public const MODERN_UPDATE_SLOTS = 7;
-
 	private int $serverSoundHandle;
 	private string $soundEvent;
-	/**
-	 * @var (SoundDataUpdate|null)[]
-	 * @phpstan-var list<SoundDataUpdate|null>
-	 */
-	private array $updates = [];
+	private ?SoundData $stop = null;
+	private ?SoundData $setVolume = null;
+	private ?SoundData $setPitch = null;
+	private ?SoundData $fade = null;
+	private ?SoundData $seekTo = null;
+	private ?SoundData $pause = null;
+	private ?SoundData $resume = null;
 
-	/**
-	 * @generate-create-func
-	 */
 	public static function create(int $serverSoundHandle, string $soundEvent) : self{
 		$result = new self;
 		$result->serverSoundHandle = $serverSoundHandle;
@@ -47,39 +40,42 @@ class ClientboundUpdateSoundDataPacket extends DataPacket implements Clientbound
 		return $result;
 	}
 
-	/**
-	 * @param (SoundDataUpdate|null)[] $updates
-	 * @phpstan-param list<SoundDataUpdate|null> $updates
-	 */
-	public static function createModern(int $serverSoundHandle, array $updates) : self{
+	public static function createWithUpdates(int $serverSoundHandle, ?SoundData $stop, ?SoundData $setVolume, ?SoundData $setPitch, ?SoundData $fade, ?SoundData $seekTo, ?SoundData $pause, ?SoundData $resume) : self{
 		$result = new self;
 		$result->serverSoundHandle = $serverSoundHandle;
 		$result->soundEvent = "";
-		$result->updates = $updates;
+		$result->stop = $stop;
+		$result->setVolume = $setVolume;
+		$result->setPitch = $setPitch;
+		$result->fade = $fade;
+		$result->seekTo = $seekTo;
+		$result->pause = $pause;
+		$result->resume = $resume;
 		return $result;
 	}
 
 	public function getServerSoundHandle() : int{ return $this->serverSoundHandle; }
 
-	/** Only used before 1.26.40. */
 	public function getSoundEvent() : string{ return $this->soundEvent; }
-
-	/**
-	 * Only used as of 1.26.40.
-	 *
-	 * @return (SoundDataUpdate|null)[]
-	 * @phpstan-return list<SoundDataUpdate|null>
-	 */
-	public function getUpdates() : array{ return $this->updates; }
+	public function getStop() : ?SoundData{ return $this->stop; }
+	public function getSetVolume() : ?SoundData{ return $this->setVolume; }
+	public function getSetPitch() : ?SoundData{ return $this->setPitch; }
+	public function getFade() : ?SoundData{ return $this->fade; }
+	public function getSeekTo() : ?SoundData{ return $this->seekTo; }
+	public function getPause() : ?SoundData{ return $this->pause; }
+	public function getResume() : ?SoundData{ return $this->resume; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->serverSoundHandle = LE::readUnsignedLong($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			$this->soundEvent = "";
-			$this->updates = [];
-			for($i = 0; $i < self::MODERN_UPDATE_SLOTS; ++$i){
-				$this->updates[] = CommonTypes::readOptional($in, SoundDataUpdate::read(...));
-			}
+			$this->stop = CommonTypes::readOptional($in, SoundData::read(...));
+			$this->setVolume = CommonTypes::readOptional($in, SoundData::read(...));
+			$this->setPitch = CommonTypes::readOptional($in, SoundData::read(...));
+			$this->fade = CommonTypes::readOptional($in, SoundData::read(...));
+			$this->seekTo = CommonTypes::readOptional($in, SoundData::read(...));
+			$this->pause = CommonTypes::readOptional($in, SoundData::read(...));
+			$this->resume = CommonTypes::readOptional($in, SoundData::read(...));
 			return;
 		}
 		$this->soundEvent = CommonTypes::getString($in);
@@ -88,8 +84,8 @@ class ClientboundUpdateSoundDataPacket extends DataPacket implements Clientbound
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeUnsignedLong($out, $this->serverSoundHandle);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			for($i = 0; $i < self::MODERN_UPDATE_SLOTS; ++$i){
-				CommonTypes::writeOptional($out, $this->updates[$i] ?? null, fn(ByteBufferWriter $out, SoundDataUpdate $update) => $update->write($out));
+			foreach([$this->stop, $this->setVolume, $this->setPitch, $this->fade, $this->seekTo, $this->pause, $this->resume] as $data){
+				CommonTypes::writeOptional($out, $data, static fn(ByteBufferWriter $out, SoundData $data) => $data->write($out));
 			}
 			return;
 		}
