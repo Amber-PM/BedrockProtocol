@@ -34,6 +34,8 @@ final class ProtocolInfo{
 	/** Actual Minecraft: PE protocol version */
 	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_40;
 	public const ACCEPTED_PROTOCOL = [
+		self::PROTOCOL_1_16_100,
+		self::PROTOCOL_1_18_10,
 		self::PROTOCOL_1_20_0,
 		self::PROTOCOL_1_20_10,
 		self::PROTOCOL_1_20_30,
