@@ -76,7 +76,7 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 			CommonTypes::writeOptional($out, $this->storage, fn(ByteBufferWriter $out, ItemStackWrapper $v) => CommonTypes::putNetworkItemStackDescriptor($out, $v, $protocolId));
 			CommonTypes::putNetworkItemStackDescriptor($out, $this->item, $protocolId);
 		}else{
-			if($this->containerName === null){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20 && $this->containerName === null){
 				throw new \InvalidArgumentException("ContainerName must be set for protocol $protocolId");
 			}
 

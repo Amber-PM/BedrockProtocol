@@ -56,8 +56,15 @@ class ModalFormResponsePacket extends DataPacket implements ServerboundPacket{
 			$this->formData = CommonTypes::readOptional($in, CommonTypes::getString(...));
 			$this->cancelReason = CommonTypes::readOptional($in, Byte::readUnsigned(...));
 		}else{
-			$this->formData = CommonTypes::getString($in);
-			$this->cancelReason = null;
+			$raw = CommonTypes::getString($in);
+			$trimmed = trim($raw);
+			if($trimmed === "null" || $trimmed === ""){
+				$this->formData = null;
+				$this->cancelReason = self::CANCEL_REASON_CLOSED;
+			}else{
+				$this->formData = $raw;
+				$this->cancelReason = null;
+			}
 		}
 	}
 
