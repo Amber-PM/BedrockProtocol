@@ -46,4 +46,7 @@ final class SelfSignedJwtBody extends JwtBodyRfc7519{
 
 	public string $xid;
 
+	public string $ipt; // ? what is that
+	public string $tid; // tf
+
 }
