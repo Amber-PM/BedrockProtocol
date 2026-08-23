@@ -25,6 +25,8 @@ class ScorePacketEntry{
 	public ?string $objectiveName = null;
 	public int $score = 0;
 	public int $type;
+	/** @var ScorePacketEntryAction|null usado en protocolo >= 1.26.40, se deriva de $type si no se setea */
+	public ?ScorePacketEntryAction $action = null;
 	/** @var int|null (if type entity or player) */
 	public ?int $actorUniqueId;
 	/** @var string|null (if type fake player) */

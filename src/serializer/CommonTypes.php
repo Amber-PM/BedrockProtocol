@@ -1339,4 +1339,64 @@ final class CommonTypes{
 			self::putBool($out, false);
 		}
 	}
+
+	/** @throws DataDecodeException */
+	public static function readDummyOptional(ByteBufferReader $in) : void{
+		$dummy = Byte::readUnsigned($in);
+		if($dummy !== 1){
+			throw new PacketDecodeException("Dummy optional first byte should always be 1, got $dummy");
+		}
+	}
+
+	public static function writeDummyOptional(ByteBufferWriter $out) : void{
+		Byte::writeUnsigned($out, 1);
+	}
+
+	/**
+	 * @phpstan-template T
+	 * @phpstan-param \Closure(ByteBufferReader) : T $reader
+	 * @phpstan-return T|null
+	 * @throws DataDecodeException
+	 */
+	public static function readDoubleOptional(ByteBufferReader $in, \Closure $reader) : mixed{
+		self::readDummyOptional($in);
+		return self::readOptional($in, $reader);
+	}
+
+	/**
+	 * @phpstan-template T
+	 * @phpstan-param T|null $value
+	 * @phpstan-param \Closure(ByteBufferWriter, T) : void $writer
+	 */
+	public static function writeDoubleOptional(ByteBufferWriter $out, mixed $value, \Closure $writer) : void{
+		self::writeDummyOptional($out);
+		self::writeOptional($out, $value, $writer);
+	}
+
+	/**
+	 * @phpstan-template T
+	 * @phpstan-param \Closure(ByteBufferReader) : T $reader
+	 * @phpstan-return list<T>
+	 * @throws DataDecodeException
+	 */
+	public static function readList(ByteBufferReader $in, \Closure $reader) : array{
+		$count = VarInt::readUnsignedInt($in);
+		$result = [];
+		for($i = 0; $i < $count; ++$i){
+			$result[] = $reader($in);
+		}
+		return $result;
+	}
+
+	/**
+	 * @phpstan-template T
+	 * @phpstan-param list<T> $list
+	 * @phpstan-param \Closure(ByteBufferWriter, T) : void $writer
+	 */
+	public static function writeList(ByteBufferWriter $out, array $list, \Closure $writer) : void{
+		VarInt::writeUnsignedInt($out, count($list));
+		foreach($list as $item){
+			$writer($out, $item);
+		}
+	}
 }
