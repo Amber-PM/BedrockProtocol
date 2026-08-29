@@ -27,7 +27,7 @@ class ServerPresenceInfoPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(?PresenceInfo $presenceConfig) : self{
+	public static function create(?\pocketmine\network\mcpe\protocol\types\PresenceInfo $presenceConfig) : self{
 		$result = new self;
 		$result->presenceConfig = $presenceConfig;
 		return $result;

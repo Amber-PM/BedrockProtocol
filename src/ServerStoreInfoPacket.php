@@ -27,7 +27,7 @@ class ServerStoreInfoPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(?ClientStoreEntrypointConfig $clientStoreEntrypointConfig) : self{
+	public static function create(?\pocketmine\network\mcpe\protocol\types\ClientStoreEntrypointConfig $clientStoreEntrypointConfig) : self{
 		$result = new self;
 		$result->clientStoreEntrypointConfig = $clientStoreEntrypointConfig;
 		return $result;

@@ -1181,9 +1181,6 @@ final class LevelSoundEvent{
 		self::BUCKET_EMPTY_LAND_ANIMAL => 608,
 		self::GEYSER_CONTINUOUS_ERUPTION_START => 609,
 		self::GEYSER_CONTINUOUS_ERUPTION_ACTIVE => 610,
-		self::MOUNT => 611,
-		self::DISMOUNT => 612,
-		self::STRAW_BED_BREAK_LEAVE => 613,
 	];
 
 	/**

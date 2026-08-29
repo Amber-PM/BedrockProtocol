@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -31,7 +32,7 @@ final class FullContainerName{
 	public function getDynamicId() : ?int{ return $this->dynamicId; }
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
-		$containerId = ContainerUIIds::read($in, $protocolId);
+		$containerId = Byte::readUnsigned($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
 			$dynamicId = CommonTypes::readOptional($in, LE::readUnsignedInt(...));
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
@@ -41,7 +42,7 @@ final class FullContainerName{
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
-		ContainerUIIds::write($out, $protocolId, $this->containerId);
+		Byte::writeUnsigned($out, $this->containerId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
 			CommonTypes::writeOptional($out, $this->dynamicId, LE::writeUnsignedInt(...));
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){

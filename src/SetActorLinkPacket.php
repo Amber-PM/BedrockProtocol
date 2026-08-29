@@ -27,7 +27,7 @@ class SetActorLinkPacket extends DataPacket implements ClientboundPacket, Server
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(EntityLink $link) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\entity\EntityLink $link) : self{
 		$result = new self;
 		$result->link = $link;
 		return $result;

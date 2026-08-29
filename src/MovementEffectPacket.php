@@ -31,7 +31,7 @@ class MovementEffectPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $actorRuntimeId, MovementEffectType $effectType, int $duration, int $tick) : self{
+	public static function create(int $actorRuntimeId, \pocketmine\network\mcpe\protocol\types\MovementEffectType $effectType, int $duration, int $tick) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
 		$result->effectType = $effectType;

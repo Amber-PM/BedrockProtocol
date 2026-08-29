@@ -36,7 +36,7 @@ class CameraAimAssistPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(string $presetId, Vector2 $viewAngle, float $distance, CameraAimAssistTargetMode $targetMode, CameraAimAssistActionType $actionType, bool $showDebugRender) : self{
+	public static function create(string $presetId, \pocketmine\math\Vector2 $viewAngle, float $distance, \pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistTargetMode $targetMode, \pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistActionType $actionType, bool $showDebugRender) : self{
 		$result = new self;
 		$result->presetId = $presetId;
 		$result->viewAngle = $viewAngle;

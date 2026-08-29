@@ -54,9 +54,7 @@ class NpcRequestPacket extends DataPacket implements ServerboundPacket{
 		$this->requestType = Byte::readUnsigned($in);
 		$this->commandString = CommonTypes::getString($in);
 		$this->actionIndex = Byte::readUnsigned($in);
-		$this->sceneName = $protocolId >= ProtocolInfo::PROTOCOL_1_17_10 ?
-			CommonTypes::getString($in) :
-			"";
+		$this->sceneName = CommonTypes::getString($in);
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -64,9 +62,7 @@ class NpcRequestPacket extends DataPacket implements ServerboundPacket{
 		Byte::writeUnsigned($out, $this->requestType);
 		CommonTypes::putString($out, $this->commandString);
 		Byte::writeUnsigned($out, $this->actionIndex);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_17_10){
-			CommonTypes::putString($out, $this->sceneName);
-		}
+		CommonTypes::putString($out, $this->sceneName);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

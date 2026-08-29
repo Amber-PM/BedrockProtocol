@@ -32,7 +32,7 @@ final class ProtocolInfo{
 	 */
 
 	/** Actual Minecraft: PE protocol version */
-	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_40;
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_44;
 	public const ACCEPTED_PROTOCOL = [
 		self::PROTOCOL_1_20_0,
 		self::PROTOCOL_1_20_10,
@@ -62,14 +62,18 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_26_10,
 		self::PROTOCOL_1_26_20,
 		self::PROTOCOL_1_26_30,
+		self::PROTOCOL_1_26_40,
 		self::CURRENT_PROTOCOL,
 	];
 
 	/** Display version shown in the server logs. This should match the version on the game's home screen. */
-	public const MINECRAFT_VERSION = 'v26.40';
+	public const MINECRAFT_VERSION = 'v26.44';
 	/** Version sent on the network for client side compatibility checks. This may differ from the display version. */
-	public const MINECRAFT_VERSION_NETWORK = '1.26.40';
+	public const MINECRAFT_VERSION_NETWORK = '1.26.44';
 
+	//thx mojang :alien:
+	//this is a fictional version of the protocol
+	public const PROTOCOL_1_26_44 = 2169;
 	public const PROTOCOL_1_26_40 = 2168;
 	public const PROTOCOL_1_26_30 = 1001;
 	public const PROTOCOL_1_26_20 = 975;
@@ -99,34 +103,6 @@ final class ProtocolInfo{
 	public const PROTOCOL_1_20_30 = 618;
 	public const PROTOCOL_1_20_10 = 594;
 	public const PROTOCOL_1_20_0 = 589;
-	public const PROTOCOL_1_19_80 = 582;
-	public const PROTOCOL_1_19_70 = 575;
-	public const PROTOCOL_1_19_63 = 568;
-	public const PROTOCOL_1_19_60 = 567;
-	public const PROTOCOL_1_19_50 = 560;
-	public const PROTOCOL_1_19_40 = 557;
-	public const PROTOCOL_1_19_30 = 554;
-	public const PROTOCOL_1_19_21 = 545;
-	public const PROTOCOL_1_19_20 = 544;
-	public const PROTOCOL_1_19_10 = 534;
-	public const PROTOCOL_1_19_0 = 527;
-	public const PROTOCOL_1_18_30 = 503;
-	public const PROTOCOL_1_18_10 = 486;
-	public const PROTOCOL_1_18_0 = 475;
-	public const PROTOCOL_1_17_40 = 471;
-	public const PROTOCOL_1_17_30 = 465;
-	public const PROTOCOL_1_17_10 = 448;
-	public const PROTOCOL_1_17_0 = 440;
-	public const PROTOCOL_1_16_220 = 431;
-	public const PROTOCOL_1_16_210 = 428;
-	public const PROTOCOL_1_16_200 = 422;
-	public const PROTOCOL_1_16_100 = 419;
-	public const PROTOCOL_1_16_20 = 408;
-	public const PROTOCOL_1_16_0 = 407;
-	public const PROTOCOL_1_14_60 = 390;
-	public const PROTOCOL_1_14_0 = 389;
-	public const PROTOCOL_1_13_0 = 388;
-	public const PROTOCOL_1_12_0 = 361;
 
 	public const LOGIN_PACKET = 0x01;
 	public const PLAY_STATUS_PACKET = 0x02;
@@ -164,7 +140,7 @@ final class ProtocolInfo{
 	public const BLOCK_PICK_REQUEST_PACKET = 0x22;
 	public const ACTOR_PICK_REQUEST_PACKET = 0x23;
 	public const PLAYER_ACTION_PACKET = 0x24;
-	public const ACTOR_FALL_PACKET = 0x25;
+
 	public const HURT_ARMOR_PACKET = 0x26;
 	public const SET_ACTOR_DATA_PACKET = 0x27;
 	public const SET_ACTOR_MOTION_PACKET = 0x28;
@@ -198,7 +174,6 @@ final class ProtocolInfo{
 	public const MAP_INFO_REQUEST_PACKET = 0x44;
 	public const REQUEST_CHUNK_RADIUS_PACKET = 0x45;
 	public const CHUNK_RADIUS_UPDATED_PACKET = 0x46;
-	public const ITEM_FRAME_DROP_ITEM_PACKET = 0x47;
 
 	public const GAME_RULES_CHANGED_PACKET = 0x48;
 	public const CAMERA_PACKET = 0x49;
@@ -288,7 +263,6 @@ final class ProtocolInfo{
 	public const PLAYER_FOG_PACKET = 0xa0;
 	public const CORRECT_PLAYER_MOVE_PREDICTION_PACKET = 0xa1;
 	public const ITEM_REGISTRY_PACKET = 0xa2;
-	public const FILTER_TEXT_PACKET = 0xa3;
 
 	public const CLIENTBOUND_DEBUG_RENDERER_PACKET = 0xa4;
 	public const SYNC_ACTOR_PROPERTY_PACKET = 0xa5;

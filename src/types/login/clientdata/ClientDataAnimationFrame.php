@@ -34,6 +34,6 @@ final class ClientDataAnimationFrame{
 	/** @required */
 	public string $Image;
 
-	/** >= PROTOCOL_1_16_0 */
+	/** @required */
 	public int $AnimationExpression;
 }

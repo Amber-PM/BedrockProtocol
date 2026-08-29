@@ -31,7 +31,7 @@ class ClientboundAttributeLayerSyncPacket extends DataPacket implements Clientbo
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(AttributeLayerSyncPayload $payload) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\AttributeLayerSyncPayload $payload) : self{
 		$result = new self;
 		$result->payload = $payload;
 		return $result;

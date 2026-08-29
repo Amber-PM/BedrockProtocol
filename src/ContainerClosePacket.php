@@ -42,9 +42,7 @@ class ContainerClosePacket extends DataPacket implements ClientboundPacket, Serv
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
 			$this->windowType = Byte::readUnsigned($in);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_100){
-			$this->server = CommonTypes::getBool($in);
-		}
+		$this->server = CommonTypes::getBool($in);
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -52,9 +50,7 @@ class ContainerClosePacket extends DataPacket implements ClientboundPacket, Serv
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
 			Byte::writeUnsigned($out, $this->windowType);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_100){
-			CommonTypes::putBool($out, $this->server);
-		}
+		CommonTypes::putBool($out, $this->server);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

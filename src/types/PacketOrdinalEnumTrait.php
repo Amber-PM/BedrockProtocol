@@ -17,7 +17,10 @@ namespace pocketmine\network\mcpe\protocol\types;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use function count;
 
-// convierte enums string a/desde su ordinal en el paquete
+/**
+ * Trait for string-backed enums serialized in packets, with ordinal-based case resolution.
+ * Provides helpers to read, validate and properly bail on invalid values.
+ */
 trait PacketOrdinalEnumTrait{
 
 	/**

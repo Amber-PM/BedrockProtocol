@@ -36,7 +36,7 @@ class StructureTemplateDataResponsePacket extends DataPacket implements Clientbo
 	 * @generate-create-func
 	 * @phpstan-param CacheableNbt<\pocketmine\nbt\tag\CompoundTag> $nbt
 	 */
-	public static function create(string $structureTemplateName, ?CacheableNbt $nbt, int $responseType) : self{
+	public static function create(string $structureTemplateName, ?\pocketmine\network\mcpe\protocol\types\CacheableNbt $nbt, int $responseType) : self{
 		$result = new self;
 		$result->structureTemplateName = $structureTemplateName;
 		$result->nbt = $nbt;

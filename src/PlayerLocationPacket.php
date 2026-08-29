@@ -32,7 +32,7 @@ class PlayerLocationPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	private static function create(PlayerLocationType $type, int $actorUniqueId, ?Vector3 $position) : self{
+	private static function create(\pocketmine\network\mcpe\protocol\types\PlayerLocationType $type, int $actorUniqueId, ?\pocketmine\math\Vector3 $position) : self{
 		$result = new self;
 		$result->type = $type;
 		$result->actorUniqueId = $actorUniqueId;
@@ -58,7 +58,10 @@ class PlayerLocationPacket extends DataPacket implements ClientboundPacket{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
 			$this->type = PlayerLocationType::fromPacket(VarInt::readUnsignedInt($in));
-			VarInt::readSignedInt($in); //unknown
+			$innerType = VarInt::readSignedInt($in);
+			if($innerType !== $this->type->value){
+				throw new PacketDecodeException("Unexpected inner type, expected {$this->type->value}, got $innerType");
+			}
 		}else{
 			$this->type = PlayerLocationType::fromPacket(LE::readUnsignedInt($in));
 			$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
@@ -73,7 +76,7 @@ class PlayerLocationPacket extends DataPacket implements ClientboundPacket{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
 			VarInt::writeUnsignedInt($out, $this->type->value);
-			VarInt::writeSignedInt($out, $this->type->value);
+			VarInt::writeSignedInt($out, $this->type->value); //inner type
 		}else{
 			LE::writeUnsignedInt($out, $this->type->value);
 			CommonTypes::putActorUniqueId($out, $this->actorUniqueId);

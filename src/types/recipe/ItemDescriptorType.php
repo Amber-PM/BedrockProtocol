@@ -14,13 +14,16 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\recipe;
 
-final class ItemDescriptorType{
+use pocketmine\network\mcpe\protocol\types\PacketOrdinalEnumTrait;
 
-	public const EMPTY = 0;
-	public const NAME = 1;
-	public const INT_ID_META = 1;
-	public const MOLANG = 2;
-	public const TAG = 3;
-	public const STRING_ID_META = 4;
-	public const COMPLEX_ALIAS = 5;
+enum ItemDescriptorType : string{
+	use PacketOrdinalEnumTrait;
+
+	case EMPTY = "empty";
+	case STRING_ID_META = "name";
+	case MOLANG = "molang";
+	case TAG = "item_tag";
+	//no longer sent since 1.26.40 - declared last so that the ordinals of the cases above stay intact
+	case INT_ID_META = "int_id_meta";
+	case COMPLEX_ALIAS = "complex_alias";
 }

@@ -25,7 +25,7 @@ use pocketmine\network\mcpe\protocol\types\OverrideUpdateType;
 class PlayerUpdateEntityOverridesPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::PLAYER_UPDATE_ENTITY_OVERRIDES_PACKET;
 
-	private int $actorRuntimeId;
+	private int $actorUniqueId;
 	private int $propertyIndex;
 	private OverrideUpdateType $updateType;
 	private ?int $intOverrideValue;
@@ -34,9 +34,9 @@ class PlayerUpdateEntityOverridesPacket extends DataPacket implements Clientboun
 	/**
 	 * @generate-create-func
 	 */
-	private static function create(int $actorRuntimeId, int $propertyIndex, OverrideUpdateType $updateType, ?int $intOverrideValue, ?float $floatOverrideValue) : self{
+	private static function create(int $actorUniqueId, int $propertyIndex, \pocketmine\network\mcpe\protocol\types\OverrideUpdateType $updateType, ?int $intOverrideValue, ?float $floatOverrideValue) : self{
 		$result = new self;
-		$result->actorRuntimeId = $actorRuntimeId;
+		$result->actorUniqueId = $actorUniqueId;
 		$result->propertyIndex = $propertyIndex;
 		$result->updateType = $updateType;
 		$result->intOverrideValue = $intOverrideValue;
@@ -44,23 +44,23 @@ class PlayerUpdateEntityOverridesPacket extends DataPacket implements Clientboun
 		return $result;
 	}
 
-	public static function createIntOverride(int $actorRuntimeId, int $propertyIndex, int $value) : self{
-		return self::create($actorRuntimeId, $propertyIndex, OverrideUpdateType::SET_INT_OVERRIDE, $value, null);
+	public static function createIntOverride(int $actorUniqueId, int $propertyIndex, int $value) : self{
+		return self::create($actorUniqueId, $propertyIndex, OverrideUpdateType::SET_INT_OVERRIDE, $value, null);
 	}
 
-	public static function createFloatOverride(int $actorRuntimeId, int $propertyIndex, float $value) : self{
-		return self::create($actorRuntimeId, $propertyIndex, OverrideUpdateType::SET_FLOAT_OVERRIDE, null, $value);
+	public static function createFloatOverride(int $actorUniqueId, int $propertyIndex, float $value) : self{
+		return self::create($actorUniqueId, $propertyIndex, OverrideUpdateType::SET_FLOAT_OVERRIDE, null, $value);
 	}
 
-	public static function createClearOverrides(int $actorRuntimeId, int $propertyIndex) : self{
-		return self::create($actorRuntimeId, $propertyIndex, OverrideUpdateType::CLEAR_OVERRIDES, null, null);
+	public static function createClearOverrides(int $actorUniqueId, int $propertyIndex) : self{
+		return self::create($actorUniqueId, $propertyIndex, OverrideUpdateType::CLEAR_OVERRIDES, null, null);
 	}
 
-	public static function createRemoveOverride(int $actorRuntimeId, int $propertyIndex) : self{
-		return self::create($actorRuntimeId, $propertyIndex, OverrideUpdateType::REMOVE_OVERRIDE, null, null);
+	public static function createRemoveOverride(int $actorUniqueId, int $propertyIndex) : self{
+		return self::create($actorUniqueId, $propertyIndex, OverrideUpdateType::REMOVE_OVERRIDE, null, null);
 	}
 
-	public function getActorRuntimeId() : int{ return $this->actorRuntimeId; }
+	public function getActorUniqueId() : int{ return $this->actorUniqueId; }
 
 	public function getPropertyIndex() : int{ return $this->propertyIndex; }
 
@@ -71,20 +71,17 @@ class PlayerUpdateEntityOverridesPacket extends DataPacket implements Clientboun
 	public function getFloatOverrideValue() : ?float{ return $this->floatOverrideValue; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->actorRuntimeId = CommonTypes::getActorUniqueId($in);
+		$this->actorUniqueId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? CommonTypes::getActorUniqueId($in) : CommonTypes::getActorRuntimeId($in);
 		$this->propertyIndex = VarInt::readUnsignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$variantType = VarInt::readUnsignedInt($in);
-			$legacyType = Byte::readUnsigned($in);
-			if($variantType !== $legacyType){
-				throw new PacketDecodeException("Mismatched entity override update types $variantType and $legacyType");
+			$this->updateType = OverrideUpdateType::fromOrdinal(VarInt::readUnsignedInt($in));
+			$innerType = OverrideUpdateType::fromPacket(CommonTypes::getString($in));
+			if($innerType->value !== $this->updateType->value){
+				throw new \RuntimeException("Unexpected inner type, expected " . $this->updateType->value . ", got " . $innerType->value);
 			}
-			$this->updateType = OverrideUpdateType::fromPacket($variantType);
 		}else{
-			$this->updateType = OverrideUpdateType::fromPacket(Byte::readUnsigned($in));
+			$this->updateType = OverrideUpdateType::fromOrdinal(Byte::readUnsigned($in));
 		}
-		$this->intOverrideValue = null;
-		$this->floatOverrideValue = null;
 		if($this->updateType === OverrideUpdateType::SET_INT_OVERRIDE){
 			$this->intOverrideValue = LE::readSignedInt($in);
 		}elseif($this->updateType === OverrideUpdateType::SET_FLOAT_OVERRIDE){
@@ -93,12 +90,18 @@ class PlayerUpdateEntityOverridesPacket extends DataPacket implements Clientboun
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		CommonTypes::putActorUniqueId($out, $this->actorRuntimeId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
+		}else{
+			CommonTypes::putActorRuntimeId($out, $this->actorUniqueId);
+		}
 		VarInt::writeUnsignedInt($out, $this->propertyIndex);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			VarInt::writeUnsignedInt($out, $this->updateType->value);
+			VarInt::writeUnsignedInt($out, $this->updateType->toOrdinal());
+			CommonTypes::putString($out, $this->updateType->value);
+		}else{
+			Byte::writeUnsigned($out, $this->updateType->toOrdinal());
 		}
-		Byte::writeUnsigned($out, $this->updateType->value);
 		if($this->updateType === OverrideUpdateType::SET_INT_OVERRIDE){
 			if($this->intOverrideValue === null){ // this should never be the case
 				throw new \LogicException("PlayerUpdateEntityOverridesPacket with type SET_INT_OVERRIDE requires intOverrideValue to be provided");

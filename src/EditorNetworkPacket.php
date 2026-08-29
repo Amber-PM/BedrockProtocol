@@ -33,7 +33,7 @@ class EditorNetworkPacket extends DataPacket implements ClientboundPacket, Serve
 	 * @generate-create-func
 	 * @phpstan-param CacheableNbt<\pocketmine\nbt\tag\CompoundTag> $payload
 	 */
-	public static function create(bool $isRouteToManager, CacheableNbt $payload) : self{
+	public static function create(bool $isRouteToManager, \pocketmine\network\mcpe\protocol\types\CacheableNbt $payload) : self{
 		$result = new self;
 		$result->isRouteToManager = $isRouteToManager;
 		$result->payload = $payload;

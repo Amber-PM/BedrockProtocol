@@ -37,7 +37,7 @@ class UpdateSubChunkBlocksPacket extends DataPacket implements ClientboundPacket
 	 * @param UpdateSubChunkBlocksPacketEntry[] $layer0Updates
 	 * @param UpdateSubChunkBlocksPacketEntry[] $layer1Updates
 	 */
-	public static function create(BlockPosition $baseBlockPosition, array $layer0Updates, array $layer1Updates) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\BlockPosition $baseBlockPosition, array $layer0Updates, array $layer1Updates) : self{
 		$result = new self;
 		$result->baseBlockPosition = $baseBlockPosition;
 		$result->layer0Updates = $layer0Updates;

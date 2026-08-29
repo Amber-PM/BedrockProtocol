@@ -31,7 +31,7 @@ class ContainerOpenPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	private static function create(int $windowId, int $windowType, BlockPosition $blockPosition, int $actorUniqueId) : self{
+	private static function create(int $windowId, int $windowType, \pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition, int $actorUniqueId) : self{
 		$result = new self;
 		$result->windowId = $windowId;
 		$result->windowType = $windowType;

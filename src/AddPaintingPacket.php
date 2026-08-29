@@ -32,7 +32,7 @@ class AddPaintingPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $actorUniqueId, int $actorRuntimeId, Vector3 $position, int $direction, string $title) : self{
+	public static function create(int $actorUniqueId, int $actorRuntimeId, \pocketmine\math\Vector3 $position, int $direction, string $title) : self{
 		$result = new self;
 		$result->actorUniqueId = $actorUniqueId;
 		$result->actorRuntimeId = $actorRuntimeId;

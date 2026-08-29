@@ -31,7 +31,7 @@ class PlayerToggleCrafterSlotRequestPacket extends DataPacket implements Serverb
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(BlockPosition $position, int $slot, bool $disabled) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\BlockPosition $position, int $slot, bool $disabled) : self{
 		$result = new self;
 		$result->position = $position;
 		$result->slot = $slot;

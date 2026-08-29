@@ -27,7 +27,7 @@ class SetMovementAuthorityPacket extends DataPacket implements ClientboundPacket
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(ServerAuthMovementMode $mode) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\ServerAuthMovementMode $mode) : self{
 		$result = new self;
 		$result->mode = $mode;
 		return $result;

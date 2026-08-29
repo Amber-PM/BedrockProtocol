@@ -29,7 +29,7 @@ class MotionPredictionHintsPacket extends DataPacket implements ClientboundPacke
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $actorRuntimeId, Vector3 $motion, bool $onGround) : self{
+	public static function create(int $actorRuntimeId, \pocketmine\math\Vector3 $motion, bool $onGround) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
 		$result->motion = $motion;

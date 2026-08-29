@@ -29,7 +29,7 @@ class UpdateClientInputLocksPacket extends DataPacket implements ClientboundPack
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $flags, Vector3 $position) : self{
+	public static function create(int $flags, \pocketmine\math\Vector3 $position) : self{
 		$result = new self;
 		$result->flags = $flags;
 		$result->position = $position;

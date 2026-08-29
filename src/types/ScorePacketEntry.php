@@ -15,20 +15,17 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\protocol\types;
 
 class ScorePacketEntry{
-	public const TYPE_REMOVE = 0;
 	public const TYPE_PLAYER = 1;
 	public const TYPE_ENTITY = 2;
 	public const TYPE_FAKE_PLAYER = 3;
 
 	public int $scoreboardId;
-	/** @var string|null (optional if type remove) */
-	public ?string $objectiveName = null;
-	public int $score = 0;
-	public int $type;
-	/** @var ScorePacketEntryAction|null usado en protocolo >= 1.26.40, se deriva de $type si no se setea */
-	public ?ScorePacketEntryAction $action = null;
-	/** @var int|null (if type entity or player) */
+	/** @var string|null (optional for remove action) */
+	public ?string $objectiveName;
+	public int $score;
+	public ScorePacketEntryAction $action;
+	/** @var int|null (if action entity or player) */
 	public ?int $actorUniqueId;
-	/** @var string|null (if type fake player) */
+	/** @var string|null (if action fake player) */
 	public ?string $customName;
 }

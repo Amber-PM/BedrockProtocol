@@ -30,7 +30,7 @@ class UpdateAbilitiesPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(AbilitiesData $data) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\AbilitiesData $data) : self{
 		$result = new self;
 		$result->data = $data;
 		return $result;

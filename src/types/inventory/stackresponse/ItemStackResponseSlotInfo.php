@@ -50,21 +50,19 @@ final class ItemStackResponseSlotInfo{
 		$slot = Byte::readUnsigned($in);
 		$hotbarSlot = Byte::readUnsigned($in);
 		$count = Byte::readUnsigned($in);
-		$itemStackId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40
-			? CommonTypes::readOptional($in, static fn(ByteBufferReader $in) => CommonTypes::getBool($in) ? CommonTypes::readServerItemStackId($in) : null)
-			: CommonTypes::readServerItemStackId($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_200){
-			$customName = CommonTypes::getString($in);
+		$itemStackId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+			CommonTypes::readDoubleOptional($in, CommonTypes::readServerItemStackId(...)) :
+			CommonTypes::readServerItemStackId($in);
+		$customName = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				$filteredCustomName = CommonTypes::readOptional($in, CommonTypes::getString(...));
+			}else{
+				$filteredCustomName = CommonTypes::getString($in);
+			}
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$filteredCustomName = CommonTypes::readOptional($in, CommonTypes::getString(...));
-		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
-			$filteredCustomName = CommonTypes::getString($in);
-		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_210){
-			$durabilityCorrection = VarInt::readSignedInt($in);
-		}
-		return new self($slot, $hotbarSlot, $count, $itemStackId, $customName ?? "", $filteredCustomName ?? $customName ?? "", $durabilityCorrection ?? 0);
+		$durabilityCorrection = VarInt::readSignedInt($in);
+		return new self($slot, $hotbarSlot, $count, $itemStackId, $customName, $filteredCustomName ?? $customName, $durabilityCorrection);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
@@ -72,23 +70,18 @@ final class ItemStackResponseSlotInfo{
 		Byte::writeUnsigned($out, $this->hotbarSlot);
 		Byte::writeUnsigned($out, $this->count);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::writeOptional($out, $this->itemStackId, static function(ByteBufferWriter $out, int $itemStackId) : void{
-				CommonTypes::putBool($out, true);
-				CommonTypes::writeServerItemStackId($out, $itemStackId);
-			});
+			CommonTypes::writeDoubleOptional($out, $this->itemStackId, CommonTypes::writeServerItemStackId(...));
 		}else{
-			CommonTypes::writeServerItemStackId($out, $this->itemStackId ?? 0);
+			CommonTypes::writeServerItemStackId($out, $this->itemStackId ?? throw new \InvalidArgumentException("itemStackId must be set before 1.26.40"));
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_200){
-			CommonTypes::putString($out, $this->customName);
+		CommonTypes::putString($out, $this->customName);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 				CommonTypes::writeOptional($out, $this->filteredCustomName, CommonTypes::putString(...));
-			}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
-				CommonTypes::putString($out, $this->filteredCustomName ?? $this->customName);
+			}else{
+				CommonTypes::putString($out, $this->filteredCustomName ?? throw new \InvalidArgumentException("filteredCustomName must be set before 1.26.40"));
 			}
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_210){
-			VarInt::writeSignedInt($out, $this->durabilityCorrection);
-		}
+		VarInt::writeSignedInt($out, $this->durabilityCorrection);
 	}
 }

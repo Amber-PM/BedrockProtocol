@@ -33,7 +33,7 @@ class SpawnParticleEffectPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $dimensionId, int $actorUniqueId, Vector3 $position, string $particleName, ?string $molangVariablesJson) : self{
+	public static function create(int $dimensionId, int $actorUniqueId, \pocketmine\math\Vector3 $position, string $particleName, ?string $molangVariablesJson) : self{
 		$result = new self;
 		$result->dimensionId = $dimensionId;
 		$result->actorUniqueId = $actorUniqueId;
@@ -48,9 +48,7 @@ class SpawnParticleEffectPacket extends DataPacket implements ClientboundPacket{
 		$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
 		$this->position = CommonTypes::getVector3($in);
 		$this->particleName = CommonTypes::getString($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
-			$this->molangVariablesJson = CommonTypes::getBool($in) ? CommonTypes::getString($in) : null;
-		}
+		$this->molangVariablesJson = CommonTypes::getBool($in) ? CommonTypes::getString($in) : null;
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -58,11 +56,9 @@ class SpawnParticleEffectPacket extends DataPacket implements ClientboundPacket{
 		CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
 		CommonTypes::putVector3($out, $this->position);
 		CommonTypes::putString($out, $this->particleName);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
-			CommonTypes::putBool($out, $this->molangVariablesJson !== null);
-			if($this->molangVariablesJson !== null){
-				CommonTypes::putString($out, $this->molangVariablesJson);
-			}
+		CommonTypes::putBool($out, $this->molangVariablesJson !== null);
+		if($this->molangVariablesJson !== null){
+			CommonTypes::putString($out, $this->molangVariablesJson);
 		}
 	}
 

@@ -44,10 +44,10 @@ class GraphicsOverrideParameterPacket extends DataPacket implements ClientboundP
 	public static function create(
 		array $values,
 		?float $unknownFloat,
-		?Vector3 $unknownVector3,
+		?\pocketmine\math\Vector3 $unknownVector3,
 		string $biomeIdentifier,
 		?string $playerIdentifier,
-		GraphicsOverrideParameterType $parameterType,
+		\pocketmine\network\mcpe\protocol\types\GraphicsOverrideParameterType $parameterType,
 		bool $reset,
 	) : self{
 		$result = new self;

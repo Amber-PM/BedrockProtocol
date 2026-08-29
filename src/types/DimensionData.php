@@ -19,9 +19,11 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
-use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
+/**
+ * Spec name: DimensionDefinition
+ */
 final class DimensionData{
 
 	public function __construct(
@@ -29,7 +31,7 @@ final class DimensionData{
 		private int $minHeight,
 		private int $generator,
 		private int $dimensionType,
-		private ?UuidInterface $packId = null,
+		private ?UuidInterface $packId = null
 	){}
 
 	public function getMaxHeight() : int{ return $this->maxHeight; }
@@ -64,7 +66,7 @@ final class DimensionData{
 			VarInt::writeSignedInt($out, $this->dimensionType);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::putUUID($out, $this->packId ?? Uuid::fromString(Uuid::NIL));
+			CommonTypes::putUUID($out, $this->packId ?? throw new \InvalidArgumentException("packId must be set"));
 		}
 	}
 }

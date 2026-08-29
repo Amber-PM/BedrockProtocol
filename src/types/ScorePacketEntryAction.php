@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
-// acción de cada entrada de SetScorePacket (protocolo >= 1.26.40)
 enum ScorePacketEntryAction : string{
 	use PacketOrdinalEnumTrait;
 

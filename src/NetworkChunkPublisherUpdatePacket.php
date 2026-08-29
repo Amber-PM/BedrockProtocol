@@ -37,7 +37,7 @@ class NetworkChunkPublisherUpdatePacket extends DataPacket implements Clientboun
 	 * @generate-create-func
 	 * @param ChunkPosition[] $savedChunks
 	 */
-	public static function create(BlockPosition $blockPosition, int $radius, array $savedChunks) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition, int $radius, array $savedChunks) : self{
 		$result = new self;
 		$result->blockPosition = $blockPosition;
 		$result->radius = $radius;
@@ -49,14 +49,12 @@ class NetworkChunkPublisherUpdatePacket extends DataPacket implements Clientboun
 		$this->blockPosition = CommonTypes::getBlockPosition($in);
 		$this->radius = VarInt::readUnsignedInt($in);
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-			$count = LE::readUnsignedInt($in);
-			if($count > self::MAX_SAVED_CHUNKS){
-				throw new PacketDecodeException("Expected at most " . self::MAX_SAVED_CHUNKS . " saved chunks, got " . $count);
-			}
-			for($i = 0, $this->savedChunks = []; $i < $count; $i++){
-				$this->savedChunks[] = ChunkPosition::read($in);
-			}
+		$count = LE::readUnsignedInt($in);
+		if($count > self::MAX_SAVED_CHUNKS){
+			throw new PacketDecodeException("Expected at most " . self::MAX_SAVED_CHUNKS . " saved chunks, got " . $count);
+		}
+		for($i = 0, $this->savedChunks = []; $i < $count; $i++){
+			$this->savedChunks[] = ChunkPosition::read($in);
 		}
 	}
 
@@ -64,11 +62,9 @@ class NetworkChunkPublisherUpdatePacket extends DataPacket implements Clientboun
 		CommonTypes::putBlockPosition($out, $this->blockPosition);
 		VarInt::writeUnsignedInt($out, $this->radius);
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-			LE::writeUnsignedInt($out, count($this->savedChunks));
-			foreach($this->savedChunks as $chunk){
-				$chunk->write($out);
-			}
+		LE::writeUnsignedInt($out, count($this->savedChunks));
+		foreach($this->savedChunks as $chunk){
+			$chunk->write($out);
 		}
 	}
 

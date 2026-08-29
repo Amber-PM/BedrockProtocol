@@ -32,7 +32,7 @@ class ChangeDimensionPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $dimension, Vector3 $position, bool $respawn, ?int $loadingScreenId) : self{
+	public static function create(int $dimension, \pocketmine\math\Vector3 $position, bool $respawn, ?int $loadingScreenId) : self{
 		$result = new self;
 		$result->dimension = $dimension;
 		$result->position = $position;

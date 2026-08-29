@@ -38,7 +38,7 @@ class MoveActorAbsolutePacket extends DataPacket implements ClientboundPacket, S
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $actorRuntimeId, Vector3 $position, float $pitch, float $yaw, float $headYaw, int $flags) : self{
+	public static function create(int $actorRuntimeId, \pocketmine\math\Vector3 $position, float $pitch, float $yaw, float $headYaw, int $flags) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
 		$result->position = $position;

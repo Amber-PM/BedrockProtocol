@@ -50,12 +50,12 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 	public array $metadata = [];
 	public PropertySyncData $syncedProperties;
 
-	public UpdateAbilitiesPacket $abilitiesPacket;
+	public AbilitiesData $abilities;
 
 	/** @var EntityLink[] */
 	public array $links = [];
 	public string $deviceId = ""; //TODO: fill player's device ID (???)
-	public int $buildPlatform = DeviceOS::ANDROID;
+	public int $buildPlatform = DeviceOS::UNKNOWN;
 
 	/**
 	 * @generate-create-func
@@ -64,20 +64,20 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 	 * @phpstan-param array<int, MetadataProperty> $metadata
 	 */
 	public static function create(
-		UuidInterface $uuid,
+		\Ramsey\Uuid\UuidInterface $uuid,
 		string $username,
 		int $actorRuntimeId,
 		string $platformChatId,
-		Vector3 $position,
-		?Vector3 $motion,
+		\pocketmine\math\Vector3 $position,
+		?\pocketmine\math\Vector3 $motion,
 		float $pitch,
 		float $yaw,
 		float $headYaw,
-		ItemStackWrapper $item,
+		\pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper $item,
 		int $gameMode,
 		array $metadata,
-		PropertySyncData $syncedProperties,
-		UpdateAbilitiesPacket $abilitiesPacket,
+		\pocketmine\network\mcpe\protocol\types\entity\PropertySyncData $syncedProperties,
+		\pocketmine\network\mcpe\protocol\types\AbilitiesData $abilities,
 		array $links,
 		string $deviceId,
 		int $buildPlatform,
@@ -96,7 +96,7 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		$result->gameMode = $gameMode;
 		$result->metadata = $metadata;
 		$result->syncedProperties = $syncedProperties;
-		$result->abilitiesPacket = $abilitiesPacket;
+		$result->abilities = $abilities;
 		$result->links = $links;
 		$result->deviceId = $deviceId;
 		$result->buildPlatform = $buildPlatform;
@@ -106,9 +106,6 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->uuid = CommonTypes::getUUID($in);
 		$this->username = CommonTypes::getString($in);
-		if($protocolId <= ProtocolInfo::PROTOCOL_1_19_0){
-			CommonTypes::getActorUniqueId($in);
-		}
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->platformChatId = CommonTypes::getString($in);
 		$this->position = CommonTypes::getVector3($in);
@@ -116,34 +113,12 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		$this->pitch = LE::readFloat($in);
 		$this->yaw = LE::readFloat($in);
 		$this->headYaw = LE::readFloat($in);
-		$this->item = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
-			CommonTypes::getNetworkItemStackDescriptor($in, $protocolId) :
-			CommonTypes::getItemStackWrapper($in, $protocolId);
-		$this->gameMode = $protocolId >= ProtocolInfo::PROTOCOL_1_18_30 ?
-			VarInt::readSignedInt($in) :
-			0;
+		$this->item = CommonTypes::getItemStackWrapper($in, $protocolId, $protocolId >= ProtocolInfo::PROTOCOL_1_26_40);
+		$this->gameMode = VarInt::readSignedInt($in);
 		$this->metadata = CommonTypes::getEntityMetadata($in, $protocolId);
-		$this->syncedProperties = $protocolId >= ProtocolInfo::PROTOCOL_1_19_40 ?
-			PropertySyncData::read($in) :
-			new PropertySyncData([], []);
+		$this->syncedProperties = PropertySyncData::read($in);
 
-		$this->abilitiesPacket = new UpdateAbilitiesPacket();
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_10){
-			$this->abilitiesPacket->decodePayload($in, $protocolId);
-		}else{
-			VarInt::readUnsignedInt($in); //flags
-			$commandPermission = VarInt::readUnsignedInt($in);
-			VarInt::readUnsignedInt($in); //action permissions
-			$playerPermission = VarInt::readUnsignedInt($in);
-			VarInt::readUnsignedInt($in); //custom flags
-			$targetActorUniqueId = LE::readSignedLong($in);
-			$this->abilitiesPacket = UpdateAbilitiesPacket::create(new AbilitiesData(
-				$commandPermission,
-				$playerPermission,
-				$targetActorUniqueId,
-				[]
-			));
-		}
+		$this->abilities = AbilitiesData::decode($in, $protocolId);
 
 		$linkCount = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $linkCount; ++$i){
@@ -157,9 +132,6 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putUUID($out, $this->uuid);
 		CommonTypes::putString($out, $this->username);
-		if($protocolId <= ProtocolInfo::PROTOCOL_1_19_0){
-			CommonTypes::putActorUniqueId($out, $this->abilitiesPacket->getData()->getTargetActorUniqueId());
-		}
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		CommonTypes::putString($out, $this->platformChatId);
 		CommonTypes::putVector3($out, $this->position);
@@ -167,30 +139,12 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		LE::writeFloat($out, $this->pitch);
 		LE::writeFloat($out, $this->yaw);
 		LE::writeFloat($out, $this->headYaw);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->item, $protocolId);
-		}else{
-			CommonTypes::putItemStackWrapper($out, $this->item, $protocolId);
-		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
-			VarInt::writeSignedInt($out, $this->gameMode);
-		}
-		CommonTypes::putEntityMetadata($out, $this->metadata, $protocolId);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
-			$this->syncedProperties->write($out);
-		}
+		CommonTypes::putItemStackWrapper($out, $protocolId, $this->item, $protocolId >= ProtocolInfo::PROTOCOL_1_26_40);
+		VarInt::writeSignedInt($out, $this->gameMode);
+		CommonTypes::putEntityMetadata($out, $protocolId, $this->metadata);
+		$this->syncedProperties->write($out);
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_10){
-			$this->abilitiesPacket->encodePayload($out, $protocolId);
-		}else{
-			$abilities = $this->abilitiesPacket->getData();
-			VarInt::writeUnsignedInt($out, 0);
-			VarInt::writeUnsignedInt($out, $abilities->getCommandPermission());
-			VarInt::writeUnsignedInt($out, 0xffffffff);
-			VarInt::writeUnsignedInt($out, $abilities->getPlayerPermission());
-			VarInt::writeUnsignedInt($out, 0);
-			LE::writeSignedLong($out, $abilities->getTargetActorUniqueId());
-		}
+		$this->abilities->encode($out, $protocolId);
 
 		VarInt::writeUnsignedInt($out, count($this->links));
 		foreach($this->links as $link){

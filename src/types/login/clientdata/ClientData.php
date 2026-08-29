@@ -21,26 +21,26 @@ final class ClientData{
 
 	/**
 	 * @var ClientDataAnimationFrame[]
-	 * >= PROTOCOL_1_13_0
+	 * @required
 	 */
-	public array $AnimatedImageData = [];
+	public array $AnimatedImageData;
 
-	/** >= PROTOCOL_1_14_60 */
+	/** @required */
 	public string $ArmSize;
 
 	/** @required */
 	public string $CapeData;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public string $CapeId;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public int $CapeImageHeight;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public int $CapeImageWidth;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public bool $CapeOnClassicSkin;
 
 	/** >= ProtocolInfo::PROTOCOL_1_26_30 */
@@ -52,8 +52,8 @@ final class ClientData{
 	/** @required */
 	public int $ClientRandomId;
 
-	/** >= ProtocolInfo::PROTOCOL_1_19_80 */
-	public bool $CompatibleWithClientSideChunkGen = false;
+	/** @required */
+	public bool $CompatibleWithClientSideChunkGen;
 
 	/** @required */
 	public int $CurrentInputMode;
@@ -83,7 +83,7 @@ final class ClientData{
 	public int $GuiScale;
 
 	/** <= ProtocolInfo::PROTOCOL_1_26_20 */
-	public bool $IsEditorMode = false;
+	public bool $IsEditorMode;
 
 	/** @required */
 	public string $LanguageCode;
@@ -94,6 +94,8 @@ final class ClientData{
 	/** >= ProtocolInfo::PROTOCOL_1_21_40 */
 	public int $MemoryTier;
 
+	public string $Nonce; //sometimes the client doesn't send it, apparently
+
 	public bool $OverrideSkin;
 
 	public string $PartyId;
@@ -102,16 +104,16 @@ final class ClientData{
 
 	/**
 	 * @var ClientDataPersonaSkinPiece[]
-	 * >= PROTOCOL_1_14_60
+	 * @required
 	 */
 	public array $PersonaPieces;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public bool $PersonaSkin;
 
 	/**
 	 * @var ClientDataPersonaPieceTintColor[]
-	 * >= PROTOCOL_1_14_60
+	 * @required
 	 */
 	public array $PieceTintColors;
 
@@ -132,43 +134,40 @@ final class ClientData{
 	/** @required */
 	public bool $PremiumSkin = false;
 
+	/** >= ProtocolInfo::PROTOCOL_1_26_40 */
+	public string $ProfileHash = "";
+
 	/** @required */
 	public string $SelfSignedId;
 
 	/** @required */
 	public string $ServerAddress;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public string $SkinAnimationData;
 
-	/** >= PROTOCOL_1_14_60 */
+	/** @required */
 	public string $SkinColor;
 
 	/** @required */
 	public string $SkinData;
 
-	/** <= PROTOCOL_1_12_0 */
-	public string $SkinGeometryName;
-
-	/** <= PROTOCOL_1_12_0 */
-	public string $SkinGeometry;
-
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public string $SkinGeometryData;
 
-	/** >= ProtocolInfo::PROTOCOL_1_17_30 */
+	/** @required */
 	public string $SkinGeometryDataEngineVersion;
 
 	/** @required */
 	public string $SkinId;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public int $SkinImageHeight;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public int $SkinImageWidth;
 
-	/** >= PROTOCOL_1_13_0 */
+	/** @required */
 	public string $SkinResourcePatch;
 
 	/** @required */
@@ -177,14 +176,8 @@ final class ClientData{
 	/** <= ProtocolInfo::PROTOCOL_1_21_80 */
 	public bool $ThirdPartyNameOnly;
 
-	/** >= ProtocolInfo::PROTOCOL_1_19_20 */
-	public bool $TrustedSkin = false;
-
-	/** >= ProtocolInfo::PROTOCOL_1_26_40 */
-	public string $ProfileHash = "";
-
-	/** >= ProtocolInfo::PROTOCOL_1_26_40 */
-	public string $Nonce = "";
+	/** @required */
+	public bool $TrustedSkin;
 
 	/** @required */
 	public int $UIProfile;

@@ -30,7 +30,7 @@ class BlockEventPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(BlockPosition $blockPosition, int $eventType, int $eventData) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition, int $eventType, int $eventData) : self{
 		$result = new self;
 		$result->blockPosition = $blockPosition;
 		$result->eventType = $eventType;

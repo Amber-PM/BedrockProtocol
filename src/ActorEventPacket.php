@@ -34,7 +34,7 @@ class ActorEventPacket extends DataPacket implements ClientboundPacket, Serverbo
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $actorRuntimeId, int $eventId, int $eventData, ?Vector3 $firePosition) : self{
+	public static function create(int $actorRuntimeId, int $eventId, int $eventData, ?\pocketmine\math\Vector3 $firePosition) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
 		$result->eventId = $eventId;

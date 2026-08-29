@@ -39,7 +39,7 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 	 * @param ResourcePackStackEntry[] $resourcePackStack
 	 * @param ResourcePackStackEntry[] $behaviorPackStack
 	 */
-	public static function create(array $resourcePackStack, array $behaviorPackStack, bool $mustAccept, string $baseGameVersion, Experiments $experiments, bool $useVanillaEditorPacks) : self{
+	public static function create(array $resourcePackStack, array $behaviorPackStack, bool $mustAccept, string $baseGameVersion, \pocketmine\network\mcpe\protocol\types\Experiments $experiments, bool $useVanillaEditorPacks) : self{
 		$result = new self;
 		$result->resourcePackStack = $resourcePackStack;
 		$result->behaviorPackStack = $behaviorPackStack;
@@ -64,14 +64,8 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 			$this->resourcePackStack[] = ResourcePackStackEntry::read($in);
 		}
 
-		if($protocolId < ProtocolInfo::PROTOCOL_1_16_100){
-			CommonTypes::getBool($in); //isExperimental
-		}
 		$this->baseGameVersion = CommonTypes::getString($in);
-		$this->experiments = $protocolId >= ProtocolInfo::PROTOCOL_1_16_100 ?
-			Experiments::read($in) :
-			new Experiments([], false);
-		$this->useVanillaEditorPacks = false;
+		$this->experiments = Experiments::read($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
 			$this->useVanillaEditorPacks = CommonTypes::getBool($in);
 		}
@@ -91,13 +85,8 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 			$entry->write($out);
 		}
 
-		if($protocolId < ProtocolInfo::PROTOCOL_1_16_100){
-			CommonTypes::putBool($out, count($this->experiments->getExperiments()) > 0);
-		}
 		CommonTypes::putString($out, $this->baseGameVersion);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_100){
-			$this->experiments->write($out);
-		}
+		$this->experiments->write($out);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
 			CommonTypes::putBool($out, $this->useVanillaEditorPacks);
 		}

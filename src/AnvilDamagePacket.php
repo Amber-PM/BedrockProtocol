@@ -29,7 +29,7 @@ class AnvilDamagePacket extends DataPacket implements ServerboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(BlockPosition $blockPosition, int $damageAmount) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition, int $damageAmount) : self{
 		$result = new self;
 		$result->blockPosition = $blockPosition;
 		$result->damageAmount = $damageAmount;
@@ -45,8 +45,6 @@ class AnvilDamagePacket extends DataPacket implements ServerboundPacket{
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		if($protocolId < ProtocolInfo::PROTOCOL_1_26_40){
 			$this->damageAmount = Byte::readUnsigned($in);
-		}else{
-			$this->damageAmount = 0;
 		}
 		$this->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 	}

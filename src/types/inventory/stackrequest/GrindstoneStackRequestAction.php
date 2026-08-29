@@ -25,6 +25,7 @@ use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
 /**
  * Repair and/or remove enchantments from an item in a grindstone.
+ * Spec name: ItemStackRequestCraftRepairAndDisenchantAction
  */
 final class GrindstoneStackRequestAction extends ItemStackRequestAction{
 	use GetTypeIdFromConstTrait;
@@ -46,21 +47,23 @@ final class GrindstoneStackRequestAction extends ItemStackRequestAction{
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$recipeId = LE::readSignedInt($in);
+			$recipeId = LE::readUnsignedInt($in); //WHY!!!!
 			$repetitions = Byte::readUnsigned($in);
-			$repairCost = VarInt::readSignedInt($in);
+			$repairCost = VarInt::readSignedInt($in); //WHY!!!!
 		}else{
 			$recipeId = CommonTypes::readRecipeNetId($in);
 			$repairCost = VarInt::readSignedInt($in); //WHY!!!!
-			$repetitions = $protocolId >= ProtocolInfo::PROTOCOL_1_21_20 ? Byte::readUnsigned($in) : 0;
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+				$repetitions = Byte::readUnsigned($in);
+			}
 		}
 
-		return new self($recipeId, $repairCost, $repetitions);
+		return new self($recipeId, $repairCost, $repetitions ?? 0);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			LE::writeSignedInt($out, $this->recipeId);
+			LE::writeUnsignedInt($out, $this->recipeId);
 			Byte::writeUnsigned($out, $this->repetitions);
 			VarInt::writeSignedInt($out, $this->repairCost);
 		}else{

@@ -52,26 +52,15 @@ class ModalFormResponsePacket extends DataPacket implements ServerboundPacket{
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->formId = VarInt::readUnsignedInt($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-			$this->formData = CommonTypes::readOptional($in, CommonTypes::getString(...));
-			$this->cancelReason = CommonTypes::readOptional($in, Byte::readUnsigned(...));
-		}else{
-			$this->formData = CommonTypes::getString($in);
-			$this->cancelReason = null;
-		}
+		$this->formData = CommonTypes::readOptional($in, CommonTypes::getString(...));
+		$this->cancelReason = CommonTypes::readOptional($in, Byte::readUnsigned(...));
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->formId);
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-			CommonTypes::writeOptional($out, $this->formData, CommonTypes::putString(...));
-			CommonTypes::writeOptional($out, $this->cancelReason, Byte::writeUnsigned(...));
-		}elseif($this->formData !== null){
-			CommonTypes::putString($out, $this->formData);
-		}else{
-			throw new \InvalidArgumentException("Cancel reason is only available on protocol 1.19.20+");
-		}
+		CommonTypes::writeOptional($out, $this->formData, CommonTypes::putString(...));
+		CommonTypes::writeOptional($out, $this->cancelReason, Byte::writeUnsigned(...));
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

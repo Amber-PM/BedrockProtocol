@@ -17,20 +17,23 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
-use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
+/**
+ * No longer sent since 1.26.40.
+ */
 final class ComplexAliasItemDescriptor implements ItemDescriptor{
-	use GetTypeIdFromConstTrait;
-
-	public const ID = ItemDescriptorType::COMPLEX_ALIAS;
 
 	public function __construct(
 		private string $alias
 	){}
 
+	public function getDescriptorType() : ItemDescriptorType{
+		return ItemDescriptorType::COMPLEX_ALIAS;
+	}
+
 	public function getAlias() : string{ return $this->alias; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$alias = CommonTypes::getString($in);
 
 		return new self($alias);

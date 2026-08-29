@@ -59,7 +59,7 @@ class CommandParameter{
 	/**
 	 * @generate-create-func
 	 */
-	public static function allFields(string $paramName, int $paramType, bool $isOptional, int $flags, CommandHardEnum|CommandSoftEnum|null $enum, ?string $postfix) : self{
+	public static function allFields(string $paramName, int $paramType, bool $isOptional, int $flags, \pocketmine\network\mcpe\protocol\types\command\CommandHardEnum|\pocketmine\network\mcpe\protocol\types\command\CommandSoftEnum|null $enum, ?string $postfix) : self{
 		$result = new self;
 		$result->paramName = $paramName;
 		$result->paramType = $paramType;

@@ -34,7 +34,7 @@ class ServerboundPackSettingChangePacket extends DataPacket implements Serverbou
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(UuidInterface $packId, PackSetting $packSetting) : self{
+	public static function create(\Ramsey\Uuid\UuidInterface $packId, \pocketmine\network\mcpe\protocol\types\PackSetting $packSetting) : self{
 		$result = new self;
 		$result->packId = $packId;
 		$result->packSetting = $packSetting;

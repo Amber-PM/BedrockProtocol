@@ -34,7 +34,7 @@ class SetPlayerInventoryOptionsPacket extends DataPacket implements ClientboundP
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(InventoryLeftTab $leftTab, InventoryRightTab $rightTab, bool $filtering, InventoryLayout $inventoryLayout, InventoryLayout $craftingLayout) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\inventory\InventoryLeftTab $leftTab, \pocketmine\network\mcpe\protocol\types\inventory\InventoryRightTab $rightTab, bool $filtering, \pocketmine\network\mcpe\protocol\types\inventory\InventoryLayout $inventoryLayout, \pocketmine\network\mcpe\protocol\types\inventory\InventoryLayout $craftingLayout) : self{
 		$result = new self;
 		$result->leftTab = $leftTab;
 		$result->rightTab = $rightTab;
