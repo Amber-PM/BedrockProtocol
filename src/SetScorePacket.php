@@ -120,6 +120,25 @@ class SetScorePacket extends DataPacket implements ClientboundPacket{
 		}
 
 		CommonTypes::writeList($out, $this->entries, function(ByteBufferWriter $out, ScorePacketEntry $entry) use ($protocolId) : void{
+			if(!isset($entry->action)){
+				if($this->type === self::TYPE_REMOVE){
+					$entry->action = ScorePacketEntryAction::REMOVE;
+				}elseif(isset($entry->type)){
+					$entry->action = match($entry->type){
+						ScorePacketEntry::TYPE_PLAYER => ScorePacketEntryAction::CHANGE_PLAYER,
+						ScorePacketEntry::TYPE_ENTITY => ScorePacketEntryAction::CHANGE_ENTITY,
+						ScorePacketEntry::TYPE_FAKE_PLAYER => ScorePacketEntryAction::CHANGE_FAKE_PLAYER,
+						default => ScorePacketEntryAction::CHANGE_FAKE_PLAYER,
+					};
+				}elseif(isset($entry->customName) && $entry->customName !== null){
+					$entry->action = ScorePacketEntryAction::CHANGE_FAKE_PLAYER;
+				}elseif(isset($entry->actorUniqueId) && $entry->actorUniqueId !== null){
+					$entry->action = ScorePacketEntryAction::CHANGE_PLAYER;
+				}else{
+					$entry->action = ScorePacketEntryAction::CHANGE_FAKE_PLAYER;
+				}
+			}
+
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 				VarInt::writeUnsignedInt($out, $entry->action->toOrdinal());
 				CommonTypes::putString($out, $entry->action->value);

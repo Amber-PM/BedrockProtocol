@@ -28,4 +28,5 @@ class ScorePacketEntry{
 	public ?int $actorUniqueId;
 	/** @var string|null (if action fake player) */
 	public ?string $customName;
+	public int $type;
 }
