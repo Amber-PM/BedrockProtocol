@@ -86,6 +86,8 @@ class SkinData{
 
 	public function getGeometryDataJson() : string{ return $this->geometryDataJson; }
 
+	public function getGeometryData() : string{ return $this->geometryDataJson; }
+
 	public function getGeometryDataEngineVersion() : string{ return $this->geometryDataEngineVersion; }
 
 	public function getAnimationData() : string{ return $this->animationData; }
