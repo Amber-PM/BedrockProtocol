@@ -50,7 +50,7 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 	 * @phpstan-param list<string>              $strings
 	 * @phpstan-param CacheableNbt<CompoundTag> $legacyDefinitions
 	 */
-	private static function internalCreate(?array $definitionData, ?array $strings, ?CacheableNbt $legacyDefinitions) : self{
+	private static function internalCreate(?array $definitionData, ?array $strings, ?\pocketmine\network\mcpe\protocol\types\CacheableNbt $legacyDefinitions) : self{
 		$result = new self;
 		$result->definitionData = $definitionData;
 		$result->strings = $strings;

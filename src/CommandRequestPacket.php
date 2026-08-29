@@ -26,13 +26,13 @@ class CommandRequestPacket extends DataPacket implements ServerboundPacket{
 	public string $command;
 	public CommandOriginData $originData;
 	public bool $isInternal;
-	public string $version = "";
-	public int $oldVersion = 0;
+	public string $version;
+	public int $oldVersion;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(string $command, CommandOriginData $originData, bool $isInternal, string $version, int $oldVersion) : self{
+	public static function create(string $command, \pocketmine\network\mcpe\protocol\types\command\CommandOriginData $originData, bool $isInternal, string $version, int $oldVersion) : self{
 		$result = new self;
 		$result->command = $command;
 		$result->originData = $originData;
@@ -48,7 +48,7 @@ class CommandRequestPacket extends DataPacket implements ServerboundPacket{
 		$this->isInternal = CommonTypes::getBool($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
 			$this->version = CommonTypes::getString($in);
-		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_19_60){
+		}else{
 			$this->oldVersion = VarInt::readSignedInt($in);
 		}
 	}
@@ -59,7 +59,7 @@ class CommandRequestPacket extends DataPacket implements ServerboundPacket{
 		CommonTypes::putBool($out, $this->isInternal);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
 			CommonTypes::putString($out, $this->version);
-		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_19_60){
+		}else{
 			VarInt::writeSignedInt($out, $this->oldVersion);
 		}
 	}

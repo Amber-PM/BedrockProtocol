@@ -46,9 +46,7 @@ class UpdateAttributesPacket extends DataPacket implements ClientboundPacket{
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$this->entries[] = UpdateAttribute::read($in, $protocolId);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_100){
-			$this->tick = VarInt::readUnsignedLong($in);
-		}
+		$this->tick = VarInt::readUnsignedLong($in);
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -57,9 +55,7 @@ class UpdateAttributesPacket extends DataPacket implements ClientboundPacket{
 		foreach($this->entries as $entry){
 			$entry->write($out, $protocolId);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_100){
-			VarInt::writeUnsignedLong($out, $this->tick);
-		}
+		VarInt::writeUnsignedLong($out, $this->tick);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

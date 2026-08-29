@@ -30,7 +30,7 @@ class BlockPickRequestPacket extends DataPacket implements ServerboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(BlockPosition $blockPosition, bool $addUserData, int $hotbarSlot) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition, bool $addUserData, int $hotbarSlot) : self{
 		$result = new self;
 		$result->blockPosition = $blockPosition;
 		$result->addUserData = $addUserData;

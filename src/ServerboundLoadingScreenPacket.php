@@ -30,7 +30,7 @@ class ServerboundLoadingScreenPacket extends DataPacket implements ServerboundPa
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(LoadingScreenType $loadingScreenType, ?int $loadingScreenId) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\hud\LoadingScreenType $loadingScreenType, ?int $loadingScreenId) : self{
 		$result = new self;
 		$result->loadingScreenType = $loadingScreenType;
 		$result->loadingScreenId = $loadingScreenId;

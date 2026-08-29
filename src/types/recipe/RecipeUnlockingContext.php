@@ -12,15 +12,15 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types\sound;
+namespace pocketmine\network\mcpe\protocol\types\recipe;
 
-final class SoundFade{
-	public function __construct(
-		private float $targetVolume,
-		private float $duration
-	){}
+use pocketmine\network\mcpe\protocol\types\PacketIntEnumTrait;
 
-	public function getTargetVolume() : float{ return $this->targetVolume; }
+enum RecipeUnlockingContext : int{
+	use PacketIntEnumTrait;
 
-	public function getDuration() : float{ return $this->duration; }
+	case NONE = 0;
+	case ALWAYS_UNLOCKED = 1;
+	case PLAYER_IN_WATER = 2;
+	case PLAYER_HAS_MANY_ITEMS = 3;
 }

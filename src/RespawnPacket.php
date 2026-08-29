@@ -34,7 +34,7 @@ class RespawnPacket extends DataPacket implements ClientboundPacket, Serverbound
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(Vector3 $position, int $respawnState, int $actorRuntimeId) : self{
+	public static function create(\pocketmine\math\Vector3 $position, int $respawnState, int $actorRuntimeId) : self{
 		$result = new self;
 		$result->position = $position;
 		$result->respawnState = $respawnState;
@@ -44,20 +44,14 @@ class RespawnPacket extends DataPacket implements ClientboundPacket, Serverbound
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->position = CommonTypes::getVector3($in);
-		$this->respawnState = self::SEARCHING_FOR_SPAWN;
-		$this->actorRuntimeId = 0;
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_13_0){
-			$this->respawnState = Byte::readUnsigned($in);
-			$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
-		}
+		$this->respawnState = Byte::readUnsigned($in);
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putVector3($out, $this->position);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_13_0){
-			Byte::writeUnsigned($out, $this->respawnState);
-			CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
-		}
+		Byte::writeUnsigned($out, $this->respawnState);
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

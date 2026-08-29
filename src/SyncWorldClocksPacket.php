@@ -31,7 +31,7 @@ class SyncWorldClocksPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(SyncWorldClocksPayload $payload) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\SyncWorldClocksPayload $payload) : self{
 		$result = new self;
 		$result->payload = $payload;
 		return $result;

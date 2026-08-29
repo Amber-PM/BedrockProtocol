@@ -12,17 +12,13 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types;
+namespace pocketmine\network\mcpe\protocol\types\skin;
 
-use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\types\PacketOrdinalEnumTrait;
 
-final class PlayerBlockActionStopBreak implements PlayerBlockAction{
+enum SkinArmSizeType : string{
+	use PacketOrdinalEnumTrait;
 
-	public function getActionType() : int{
-		return PlayerAction::STOP_BREAK;
-	}
-
-	public function write(ByteBufferWriter $out) : void{
-		//NOOP
-	}
+	case SLIM = "slim";
+	case WIDE = "wide";
 }

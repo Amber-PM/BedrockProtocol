@@ -27,7 +27,7 @@ class ServerPlayerPostMovePositionPacket extends DataPacket implements Clientbou
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(Vector3 $position) : self{
+	public static function create(\pocketmine\math\Vector3 $position) : self{
 		$result = new self;
 		$result->position = $position;
 		return $result;

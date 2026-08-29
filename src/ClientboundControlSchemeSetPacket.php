@@ -27,7 +27,7 @@ class ClientboundControlSchemeSetPacket extends DataPacket implements Clientboun
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(ControlScheme $scheme) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\ControlScheme $scheme) : self{
 		$result = new self;
 		$result->scheme = $scheme;
 		return $result;

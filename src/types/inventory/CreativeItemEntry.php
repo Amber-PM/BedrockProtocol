@@ -44,7 +44,7 @@ final class CreativeItemEntry{
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeCreativeItemNetId($out, $this->entryId);
-		CommonTypes::putItemStackWithoutStackId($out, $this->item, $protocolId);
+		CommonTypes::putItemStackWithoutStackId($out, $protocolId, $this->item);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
 			VarInt::writeUnsignedInt($out, $this->groupId);
 		}

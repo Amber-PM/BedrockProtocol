@@ -44,8 +44,9 @@ class UpdateBlockPacket extends DataPacket implements ClientboundPacket{
 
 	/**
 	 * @generate-create-func
+	 * @param int $flags
 	 */
-	public static function create(BlockPosition $blockPosition, int $blockRuntimeId, int $flags, int $dataLayerId) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition, int $blockRuntimeId, int $flags, int $dataLayerId) : self{
 		$result = new self;
 		$result->blockPosition = $blockPosition;
 		$result->blockRuntimeId = $blockRuntimeId;

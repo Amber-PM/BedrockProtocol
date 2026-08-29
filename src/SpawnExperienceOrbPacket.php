@@ -29,7 +29,7 @@ class SpawnExperienceOrbPacket extends DataPacket implements ServerboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(Vector3 $position, int $amount) : self{
+	public static function create(\pocketmine\math\Vector3 $position, int $amount) : self{
 		$result = new self;
 		$result->position = $position;
 		$result->amount = $amount;

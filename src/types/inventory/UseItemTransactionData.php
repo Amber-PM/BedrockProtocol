@@ -93,8 +93,6 @@ class UseItemTransactionData extends TransactionData{
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			$this->triggerType = TriggerType::fromPacket($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 ? Byte::readUnsigned($in) : VarInt::readUnsignedInt($in));
-		}else{
-			$this->triggerType = TriggerType::UNKNOWN;
 		}
 		$this->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
@@ -103,11 +101,7 @@ class UseItemTransactionData extends TransactionData{
 			$this->face = VarInt::readSignedInt($in);
 		}
 		$this->hotbarSlot = VarInt::readSignedInt($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
-			$this->itemInHand = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
-		}else{
-			$this->itemInHand = CommonTypes::getItemStackWrapper($in, $protocolId);
-		}
+		$this->itemInHand = CommonTypes::getItemStackWrapper($in, $protocolId, $protocolId >= ProtocolInfo::PROTOCOL_1_26_30);
 		$this->playerPosition = CommonTypes::getVector3($in);
 		$this->clickPosition = CommonTypes::getVector3($in);
 		$this->blockRuntimeId = VarInt::readUnsignedInt($in);
@@ -115,12 +109,7 @@ class UseItemTransactionData extends TransactionData{
 			$this->clientInteractPrediction = PredictedResult::fromPacket($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 ? Byte::readUnsigned($in) : VarInt::readUnsignedInt($in));
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
 				$this->clientCooldownState = Byte::readUnsigned($in);
-			}else{
-				$this->clientCooldownState = 0;
 			}
-		}else{
-			$this->clientInteractPrediction = PredictedResult::FAILURE;
-			$this->clientCooldownState = 0;
 		}
 	}
 
@@ -144,11 +133,7 @@ class UseItemTransactionData extends TransactionData{
 			VarInt::writeSignedInt($out, $this->face);
 		}
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand, $protocolId);
-		}else{
-			CommonTypes::putItemStackWrapper($out, $this->itemInHand, $protocolId);
-		}
+		CommonTypes::putItemStackWrapper($out, $protocolId, $this->itemInHand, $protocolId >= ProtocolInfo::PROTOCOL_1_26_30);
 		CommonTypes::putVector3($out, $this->playerPosition);
 		CommonTypes::putVector3($out, $this->clickPosition);
 		VarInt::writeUnsignedInt($out, $this->blockRuntimeId);
@@ -169,15 +154,15 @@ class UseItemTransactionData extends TransactionData{
 	 */
 	private static function initSelf(
 		int $actionType,
-		TriggerType $triggerType,
-		BlockPosition $blockPosition,
+		\pocketmine\network\mcpe\protocol\types\inventory\TriggerType $triggerType,
+		\pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition,
 		int $face,
 		int $hotbarSlot,
-		ItemStackWrapper $itemInHand,
-		Vector3 $playerPosition,
-		Vector3 $clickPosition,
+		\pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper $itemInHand,
+		\pocketmine\math\Vector3 $playerPosition,
+		\pocketmine\math\Vector3 $clickPosition,
 		int $blockRuntimeId,
-		PredictedResult $clientInteractPrediction,
+		\pocketmine\network\mcpe\protocol\types\inventory\PredictedResult $clientInteractPrediction,
 		int $clientCooldownState,
 	) : self{
 		$result = new self;
@@ -197,6 +182,7 @@ class UseItemTransactionData extends TransactionData{
 
 	/**
 	 * @param NetworkInventoryAction[] $actions
+	 * @phpstan-param list<NetworkInventoryAction> $actions
 	 */
 	public static function new(array $actions, int $actionType, TriggerType $triggerType, BlockPosition $blockPosition, int $face, int $hotbarSlot, ItemStackWrapper $itemInHand, Vector3 $playerPosition, Vector3 $clickPosition, int $blockRuntimeId, PredictedResult $clientInteractPrediction, int $clientCooldownState) : self{
 		$result = self::initSelf($actionType, $triggerType, $blockPosition, $face, $hotbarSlot, $itemInHand, $playerPosition, $clickPosition, $blockRuntimeId, $clientInteractPrediction, $clientCooldownState);

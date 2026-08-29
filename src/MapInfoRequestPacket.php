@@ -43,26 +43,22 @@ class MapInfoRequestPacket extends DataPacket implements ServerboundPacket{
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->mapId = CommonTypes::getActorUniqueId($in);
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-			$this->clientPixels = [];
-			$count = LE::readUnsignedInt($in);
-			if($count > MapImage::MAX_HEIGHT * MapImage::MAX_WIDTH){
-				throw new PacketDecodeException("Too many pixels");
-			}
-			for($i = 0; $i < $count; $i++){
-				$this->clientPixels[] = MapInfoRequestPacketClientPixel::read($in);
-			}
+		$this->clientPixels = [];
+		$count = LE::readUnsignedInt($in);
+		if($count > MapImage::MAX_HEIGHT * MapImage::MAX_WIDTH){
+			throw new PacketDecodeException("Too many pixels");
+		}
+		for($i = 0; $i < $count; $i++){
+			$this->clientPixels[] = MapInfoRequestPacketClientPixel::read($in);
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->mapId);
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-			LE::writeUnsignedInt($out, count($this->clientPixels));
-			foreach($this->clientPixels as $pixel){
-				$pixel->write($out);
-			}
+		LE::writeUnsignedInt($out, count($this->clientPixels));
+		foreach($this->clientPixels as $pixel){
+			$pixel->write($out);
 		}
 	}
 

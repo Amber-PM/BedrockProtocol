@@ -71,11 +71,7 @@ class UseItemOnEntityTransactionData extends TransactionData{
 			$this->actionType = VarInt::readUnsignedInt($in);
 		}
 		$this->hotbarSlot = VarInt::readSignedInt($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
-			$this->itemInHand = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
-		}else{
-			$this->itemInHand = CommonTypes::getItemStackWrapper($in, $protocolId);
-		}
+		$this->itemInHand = CommonTypes::getItemStackWrapper($in, $protocolId, $protocolId >= ProtocolInfo::PROTOCOL_1_26_30);
 		$this->playerPosition = CommonTypes::getVector3($in);
 		$this->clickPosition = CommonTypes::getVector3($in);
 	}
@@ -88,11 +84,7 @@ class UseItemOnEntityTransactionData extends TransactionData{
 			VarInt::writeUnsignedInt($out, $this->actionType);
 		}
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand, $protocolId);
-		}else{
-			CommonTypes::putItemStackWrapper($out, $this->itemInHand, $protocolId);
-		}
+		CommonTypes::putItemStackWrapper($out, $protocolId, $this->itemInHand, $protocolId >= ProtocolInfo::PROTOCOL_1_26_30);
 		CommonTypes::putVector3($out, $this->playerPosition);
 		CommonTypes::putVector3($out, $this->clickPosition);
 	}
@@ -100,7 +92,7 @@ class UseItemOnEntityTransactionData extends TransactionData{
 	/**
 	 * @generate-create-func
 	 */
-	private static function initSelf(int $actorRuntimeId, int $actionType, int $hotbarSlot, ItemStackWrapper $itemInHand, Vector3 $playerPosition, Vector3 $clickPosition) : self{
+	private static function initSelf(int $actorRuntimeId, int $actionType, int $hotbarSlot, \pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper $itemInHand, \pocketmine\math\Vector3 $playerPosition, \pocketmine\math\Vector3 $clickPosition) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
 		$result->actionType = $actionType;
@@ -113,6 +105,7 @@ class UseItemOnEntityTransactionData extends TransactionData{
 
 	/**
 	 * @param NetworkInventoryAction[] $actions
+	 * @phpstan-param list<NetworkInventoryAction> $actions
 	 */
 	public static function new(array $actions, int $actorRuntimeId, int $actionType, int $hotbarSlot, ItemStackWrapper $itemInHand, Vector3 $playerPosition, Vector3 $clickPosition) : self{
 		$result = self::initSelf($actorRuntimeId, $actionType, $hotbarSlot, $itemInHand, $playerPosition, $clickPosition);

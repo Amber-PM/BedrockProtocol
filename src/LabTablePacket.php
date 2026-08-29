@@ -34,7 +34,7 @@ class LabTablePacket extends DataPacket implements ClientboundPacket, Serverboun
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $actionType, BlockPosition $blockPosition, int $reactionType) : self{
+	public static function create(int $actionType, \pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition, int $reactionType) : self{
 		$result = new self;
 		$result->actionType = $actionType;
 		$result->blockPosition = $blockPosition;

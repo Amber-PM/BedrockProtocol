@@ -14,14 +14,22 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\login\clientdata;
 
-use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\color\Color;
 use pocketmine\network\mcpe\protocol\types\skin\PersonaPieceTintColor;
 use pocketmine\network\mcpe\protocol\types\skin\PersonaSkinPiece;
+use pocketmine\network\mcpe\protocol\types\skin\PersonaSkinPieceType;
 use pocketmine\network\mcpe\protocol\types\skin\SkinAnimation;
+use pocketmine\network\mcpe\protocol\types\skin\SkinArmSizeType;
 use pocketmine\network\mcpe\protocol\types\skin\SkinData;
 use pocketmine\network\mcpe\protocol\types\skin\SkinImage;
+use Ramsey\Uuid\Uuid;
 use function array_map;
+use function array_values;
 use function base64_decode;
+use function count;
+use function hexdec;
+use function is_int;
+use function preg_match;
 
 final class ClientDataToSkinDataHelper{
 
@@ -37,10 +45,63 @@ final class ClientDataToSkinDataHelper{
 	}
 
 	/**
+	 * Parses a hex color string in #AARRGGBB or shorter formats into a Color.
+	 *
+	 * @throws \InvalidArgumentException
+	 */
+	private static function parseColorString(string $colorString) : Color{
+		if(preg_match('/^#([a-fA-F0-9]{1,8})$/', $colorString, $matches) !== 1){
+			throw new \InvalidArgumentException("Invalid hex color string: '$colorString'");
+		}
+
+		$argb = hexdec($matches[1]);
+		if(!is_int($argb)){
+			throw new \InvalidArgumentException("Invalid hex color string: '$colorString'");
+		}
+
+		return Color::fromARGB($argb);
+	}
+
+	/**
+	 * @throws \InvalidArgumentException
+	 */
+	private static function parsePersonaSkinPiece(ClientDataPersonaSkinPiece $piece) : PersonaSkinPiece{
+		if(!Uuid::isValid($piece->PackId)){
+			throw new \InvalidArgumentException("Invalid Persona skin piece pack ID: '$piece->PackId'");
+		}
+
+		return new PersonaSkinPiece(
+			$piece->PieceId,
+			PersonaSkinPieceType::fromJsonString($piece->PieceType),
+			Uuid::fromString($piece->PackId),
+			$piece->IsDefault,
+			$piece->ProductId
+		);
+	}
+
+	/**
+	 * @throws \InvalidArgumentException
+	 */
+	private static function parsePersonaPieceTintColor(ClientDataPersonaPieceTintColor $tint) : PersonaPieceTintColor{
+		if(($colorsCount = count($tint->Colors)) !== PersonaPieceTintColor::EXPECTED_COLOR_COUNT){
+			throw new \InvalidArgumentException(
+				"Persona skin piece tint must contain exactly " . PersonaPieceTintColor::EXPECTED_COLOR_COUNT . " colors, got " . $colorsCount
+			);
+		}
+
+		/** @phpstan-var array{Color, Color, Color, Color} $colors */
+		$colors = array_values(array_map(self::parseColorString(...), $tint->Colors));
+
+		return new PersonaPieceTintColor(
+			PersonaSkinPieceType::fromJsonString($tint->PieceType),
+			$colors
+		);
+	}
+
+	/**
 	 * @throws \InvalidArgumentException
 	 */
 	public static function fromClientData(ClientData $clientData) : SkinData{
-		/** @var SkinAnimation[] $animations */
 		$animations = [];
 		foreach($clientData->AnimatedImageData as $k => $animation){
 			$animations[] = new SkinAnimation(
@@ -51,55 +112,33 @@ final class ClientDataToSkinDataHelper{
 				),
 				$animation->Type,
 				$animation->Frames,
-				$animation->AnimationExpression ?? 0
+				$animation->AnimationExpression
 			);
-		}
-		$skinData = self::safeB64Decode($clientData->SkinData, "SkinData");
-		$skinImage = isset($clientData->SkinImageHeight, $clientData->SkinImageWidth) ?
-			new SkinImage($clientData->SkinImageHeight, $clientData->SkinImageWidth, $skinData) :
-			SkinImage::fromLegacy($skinData);
-
-		$capeImage = new SkinImage(0, 0, "");
-		$capeData = self::safeB64Decode($clientData->CapeData, "CapeData");
-		if($capeData !== ""){
-			$capeImage = isset($clientData->CapeImageHeight, $clientData->CapeImageWidth) ?
-				new SkinImage($clientData->CapeImageHeight, $clientData->CapeImageWidth, $capeData) :
-				SkinImage::fromLegacy($capeData);
 		}
 
 		return new SkinData(
 			$clientData->SkinId,
 			$clientData->PlayFabId ?? "",
-			isset($clientData->SkinResourcePatch) ? self::safeB64Decode($clientData->SkinResourcePatch, "SkinResourcePatch") : null,
-			$skinImage,
+			self::safeB64Decode($clientData->SkinResourcePatch, "SkinResourcePatch"),
+			new SkinImage($clientData->SkinImageHeight, $clientData->SkinImageWidth, self::safeB64Decode($clientData->SkinData, "SkinData")),
 			$animations,
-			$capeImage,
-			self::safeB64Decode($clientData->SkinGeometryData ?? $clientData->SkinGeometry, "SkinGeometryData"),
-			isset($clientData->SkinGeometryDataEngineVersion) ?
-				self::safeB64Decode($clientData->SkinGeometryDataEngineVersion, "SkinGeometryDataEngineVersion") :
-				ProtocolInfo::MINECRAFT_VERSION_NETWORK,
-			isset($clientData->SkinAnimationData) ? self::safeB64Decode($clientData->SkinAnimationData, "SkinAnimationData") : "",
-			$clientData->CapeId ?? "",
+			new SkinImage($clientData->CapeImageHeight, $clientData->CapeImageWidth, self::safeB64Decode($clientData->CapeData, "CapeData")),
+			self::safeB64Decode($clientData->SkinGeometryData, "SkinGeometryData"),
+			self::safeB64Decode($clientData->SkinGeometryDataEngineVersion, "SkinGeometryDataEngineVersion"), //yes, they actually base64'd the version!
+			self::safeB64Decode($clientData->SkinAnimationData, "SkinAnimationData"),
+			$clientData->CapeId,
 			null,
-			$clientData->ArmSize ?? "",
-			$clientData->SkinColor ?? "",
-			array_map(function(ClientDataPersonaSkinPiece $piece) : PersonaSkinPiece{
-				return new PersonaSkinPiece($piece->PieceId, $piece->PieceType, $piece->PackId, $piece->IsDefault, $piece->ProductId);
-			}, $clientData->PersonaPieces ?? []),
-			array_map(function(ClientDataPersonaPieceTintColor $tint) : PersonaPieceTintColor{
-				return new PersonaPieceTintColor($tint->PieceType, $tint->Colors);
-			}, $clientData->PieceTintColors ?? []),
-			true,
+			SkinArmSizeType::fromPacket($clientData->ArmSize),
+			self::parseColorString($clientData->SkinColor),
+			array_values(array_map(self::parsePersonaSkinPiece(...), $clientData->PersonaPieces)),
+			array_values(array_map(self::parsePersonaPieceTintColor(...), $clientData->PieceTintColors)),
+			$clientData->TrustedSkin ? SkinData::TRUSTED_SKIN_TRUE : SkinData::TRUSTED_SKIN_FALSE,
 			$clientData->PremiumSkin,
-			$clientData->PersonaSkin ?? false,
-			$clientData->CapeOnClassicSkin ?? false,
+			$clientData->PersonaSkin,
+			$clientData->CapeOnClassicSkin,
 			true, //assume this is true? there's no field for it ...
 			$clientData->OverrideSkin ?? true,
-			$clientData->SkinGeometryName ?? null,
-			isset($clientData->TrustedSkin) ?
-				($clientData->TrustedSkin ? SkinData::TRUSTED_SKIN_FLAG_TRUE : SkinData::TRUSTED_SKIN_FLAG_UNSET) :
-				SkinData::TRUSTED_SKIN_FLAG_TRUE,
-			$clientData->ProfileHash ?? "",
+			$clientData->ProfileHash,
 		);
 	}
 }

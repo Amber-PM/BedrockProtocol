@@ -41,12 +41,12 @@ class CorrectPlayerMovePredictionPacket extends DataPacket implements Clientboun
 	 * @generate-create-func
 	 */
 	public static function create(
-		Vector3 $position,
-		Vector3 $delta,
+		\pocketmine\math\Vector3 $position,
+		\pocketmine\math\Vector3 $delta,
 		bool $onGround,
 		int $tick,
 		int $predictionType,
-		Vector2 $vehicleRotation,
+		\pocketmine\math\Vector2 $vehicleRotation,
 		?float $vehicleAngularVelocity,
 	) : self{
 		$result = new self;

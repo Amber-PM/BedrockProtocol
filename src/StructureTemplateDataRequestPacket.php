@@ -36,7 +36,7 @@ class StructureTemplateDataRequestPacket extends DataPacket implements Serverbou
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(string $structureTemplateName, BlockPosition $structureBlockPosition, StructureSettings $structureSettings, int $requestType) : self{
+	public static function create(string $structureTemplateName, \pocketmine\network\mcpe\protocol\types\BlockPosition $structureBlockPosition, \pocketmine\network\mcpe\protocol\types\StructureSettings $structureSettings, int $requestType) : self{
 		$result = new self;
 		$result->structureTemplateName = $structureTemplateName;
 		$result->structureBlockPosition = $structureBlockPosition;

@@ -29,7 +29,7 @@ class AvailableActorIdentifiersPacket extends DataPacket implements ClientboundP
 	 * @generate-create-func
 	 * @phpstan-param CacheableNbt<\pocketmine\nbt\tag\CompoundTag> $identifiers
 	 */
-	public static function create(CacheableNbt $identifiers) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\CacheableNbt $identifiers) : self{
 		$result = new self;
 		$result->identifiers = $identifiers;
 		return $result;

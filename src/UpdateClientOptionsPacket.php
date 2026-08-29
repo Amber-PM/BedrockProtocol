@@ -29,7 +29,7 @@ class UpdateClientOptionsPacket extends DataPacket implements ServerboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(?GraphicsMode $graphicsMode, ?bool $filterProfanityChange) : self{
+	public static function create(?\pocketmine\network\mcpe\protocol\types\GraphicsMode $graphicsMode, ?bool $filterProfanityChange) : self{
 		$result = new self;
 		$result->graphicsMode = $graphicsMode;
 		$result->filterProfanityChange = $filterProfanityChange;

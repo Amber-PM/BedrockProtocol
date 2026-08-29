@@ -26,7 +26,7 @@ class EduUriResourcePacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(EducationUriResource $resource) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\EducationUriResource $resource) : self{
 		$result = new self;
 		$result->resource = $resource;
 		return $result;

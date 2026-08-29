@@ -17,8 +17,6 @@ namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pmmp\encoding\LE;
-use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\FullContainerName;
 
@@ -38,17 +36,13 @@ final class ItemStackRequestSlotInfo{
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$containerName = FullContainerName::read($in, $protocolId);
 		$slotId = Byte::readUnsigned($in);
-		$stackId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? LE::readSignedInt($in) : CommonTypes::readItemStackNetIdVariant($in);
+		$stackId = CommonTypes::readItemStackNetIdVariant($in, $protocolId);
 		return new self($containerName, $slotId, $stackId);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		$this->containerName->write($out, $protocolId);
 		Byte::writeUnsigned($out, $this->slotId);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			LE::writeSignedInt($out, $this->stackId);
-		}else{
-			CommonTypes::writeItemStackNetIdVariant($out, $this->stackId);
-		}
+		CommonTypes::writeItemStackNetIdVariant($out, $protocolId, $this->stackId);
 	}
 }

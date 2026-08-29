@@ -17,11 +17,12 @@ namespace pocketmine\network\mcpe\protocol\types\inventory\stackresponse;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
-use function count;
 
+/**
+ * Spec name: ItemStackResponseInfo
+ */
 final class ItemStackResponse{
 
 	public const RESULT_OK = 0;
@@ -30,15 +31,16 @@ final class ItemStackResponse{
 	//to waste my time on right now...
 
 	/**
-	 * @param ItemStackResponseContainerInfo[] $containerInfos
+	 * @param ItemStackResponseContainerInfo[]|null $containerInfos
+	 * @phpstan-param list<ItemStackResponseContainerInfo>|null $containerInfos
 	 */
 	public function __construct(
 		private int $result,
 		private int $requestId,
-		private array $containerInfos = []
+		private ?array $containerInfos
 	){
-		if($this->result !== self::RESULT_OK && count($this->containerInfos) !== 0){
-			throw new \InvalidArgumentException("Container infos must be empty if rejecting the request");
+		if($this->result !== self::RESULT_OK && $this->containerInfos !== null){
+			throw new \InvalidArgumentException("Container infos must be null if rejecting the request");
 		}
 	}
 
@@ -46,54 +48,33 @@ final class ItemStackResponse{
 
 	public function getRequestId() : int{ return $this->requestId; }
 
-	/** @return ItemStackResponseContainerInfo[] */
-	public function getContainerInfos() : array{ return $this->containerInfos; }
+	/**
+	 * @return ItemStackResponseContainerInfo[]|null
+	 * @phpstan-return list<ItemStackResponseContainerInfo>|null
+	 */
+	public function getContainerInfos() : ?array{ return $this->containerInfos; }
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
-		$result = $protocolId >= ProtocolInfo::PROTOCOL_1_16_100 ?
-			Byte::readUnsigned($in) :
-			(CommonTypes::getBool($in) ? self::RESULT_OK : self::RESULT_ERROR);
+		$result = Byte::readUnsigned($in);
 		$requestId = CommonTypes::readItemStackRequestId($in);
-		$containerInfos = [];
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			//v2168: a "has container info" bool followed by a "present" bool gate the container list
-			if(CommonTypes::getBool($in) && CommonTypes::getBool($in)){
-				for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-					$containerInfos[] = ItemStackResponseContainerInfo::read($in, $protocolId);
-				}
-			}
-		}elseif($result === self::RESULT_OK){
-			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-				$containerInfos[] = ItemStackResponseContainerInfo::read($in, $protocolId);
-			}
+			$containerInfos = CommonTypes::readDoubleOptional($in, fn(ByteBufferReader $in) => CommonTypes::readList($in, fn(ByteBufferReader $in) => ItemStackResponseContainerInfo::read($in, $protocolId)));
+		}else{
+			$containerInfos = $result === self::RESULT_OK ?
+				CommonTypes::readList($in, fn(ByteBufferReader $in) => ItemStackResponseContainerInfo::read($in, $protocolId)) :
+				null;
 		}
 		return new self($result, $requestId, $containerInfos);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_100){
-			Byte::writeUnsigned($out, $this->result);
-		}else{
-			CommonTypes::putBool($out, $this->result === self::RESULT_OK);
-		}
+		Byte::writeUnsigned($out, $this->result);
 		CommonTypes::writeItemStackRequestId($out, $this->requestId);
+		$writeContainerInfo = fn(ByteBufferWriter $out, ItemStackResponseContainerInfo $v) => $v->write($out, $protocolId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			//v2168: always write the "has container info" bool, followed by a "present" bool
-			CommonTypes::putBool($out, true);
-			if(count($this->containerInfos) !== 0){
-				CommonTypes::putBool($out, true);
-				VarInt::writeUnsignedInt($out, count($this->containerInfos));
-				foreach($this->containerInfos as $containerInfo){
-					$containerInfo->write($out, $protocolId);
-				}
-			}else{
-				CommonTypes::putBool($out, false);
-			}
+			CommonTypes::writeDoubleOptional($out, $this->containerInfos, fn(ByteBufferWriter $out, array $list) => CommonTypes::writeList($out, $list, $writeContainerInfo));
 		}elseif($this->result === self::RESULT_OK){
-			VarInt::writeUnsignedInt($out, count($this->containerInfos));
-			foreach($this->containerInfos as $containerInfo){
-				$containerInfo->write($out, $protocolId);
-			}
+			CommonTypes::writeList($out, $this->containerInfos ?? [], $writeContainerInfo);
 		}
 	}
 }

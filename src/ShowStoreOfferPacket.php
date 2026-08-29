@@ -32,7 +32,7 @@ class ShowStoreOfferPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(UuidInterface $offerId, bool $showAll, ShowStoreOfferRedirectType $redirectType) : self{
+	public static function create(\Ramsey\Uuid\UuidInterface $offerId, bool $showAll, \pocketmine\network\mcpe\protocol\types\ShowStoreOfferRedirectType $redirectType) : self{
 		$result = new self;
 		$result->offerId = $offerId;
 		$result->showAll = $showAll;

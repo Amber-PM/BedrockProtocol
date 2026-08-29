@@ -26,7 +26,7 @@ class ServerboundDataStorePacket extends DataPacket implements ServerboundPacket
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(DataStoreUpdate $update) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\ddui\DataStoreUpdate $update) : self{
 		$result = new self;
 		$result->update = $update;
 		return $result;

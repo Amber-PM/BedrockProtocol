@@ -35,7 +35,7 @@ class UpdateEquipPacket extends DataPacket implements ClientboundPacket{
 	 * @generate-create-func
 	 * @phpstan-param CacheableNbt<\pocketmine\nbt\tag\CompoundTag> $nbt
 	 */
-	public static function create(int $windowId, int $windowType, int $windowSlotCount, int $actorUniqueId, CacheableNbt $nbt) : self{
+	public static function create(int $windowId, int $windowType, int $windowSlotCount, int $actorUniqueId, \pocketmine\network\mcpe\protocol\types\CacheableNbt $nbt) : self{
 		$result = new self;
 		$result->windowId = $windowId;
 		$result->windowType = $windowType;

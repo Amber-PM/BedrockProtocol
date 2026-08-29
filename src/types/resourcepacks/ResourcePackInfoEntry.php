@@ -85,9 +85,7 @@ class ResourcePackInfoEntry{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			CommonTypes::putBool($out, $this->isAddonPack);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_200){
-			CommonTypes::putBool($out, $this->isRtxCapable);
-		}
+		CommonTypes::putBool($out, $this->isRtxCapable);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
 			CommonTypes::putString($out, $this->cdnUrl);
 		}
@@ -108,12 +106,10 @@ class ResourcePackInfoEntry{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			$isAddonPack = CommonTypes::getBool($in);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_16_200){
-			$rtxCapable = CommonTypes::getBool($in);
-		}
+		$rtxCapable = CommonTypes::getBool($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
 			$cdnUrl = CommonTypes::getString($in);
 		}
-		return new self($uuid, $version, $sizeBytes, $encryptionKey, $subPackName, $contentId, $hasScripts, $isAddonPack ?? false, $rtxCapable ?? false, $cdnUrl ?? "");
+		return new self($uuid, $version, $sizeBytes, $encryptionKey, $subPackName, $contentId, $hasScripts, $isAddonPack ?? false, $rtxCapable, $cdnUrl ?? "");
 	}
 }

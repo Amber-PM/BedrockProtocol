@@ -12,18 +12,18 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types;
+namespace pocketmine\network\mcpe\protocol\types\sound;
 
-final class LegacyBlockPaletteEntry{
-	public function __construct(
-		private string $name,
-		private int $id,
-		private int $metadata,
-	){}
+use pocketmine\network\mcpe\protocol\types\PacketIntEnumTrait;
 
-	public function getName() : string{ return $this->name; }
+enum SoundDataEventType : int{
+	use PacketIntEnumTrait;
 
-	public function getId() : int{ return $this->id; }
-
-	public function getMetadata() : int{ return $this->metadata; }
+	case STOP = 0;
+	case SET_VOLUME = 1;
+	case SET_PITCH = 2;
+	case FADE = 3;
+	case SEEK_TO = 4;
+	case PAUSE = 5;
+	case RESUME = 6;
 }

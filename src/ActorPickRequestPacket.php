@@ -41,17 +41,13 @@ class ActorPickRequestPacket extends DataPacket implements ServerboundPacket{
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorUniqueId = LE::readSignedLong($in);
 		$this->hotbarSlot = Byte::readUnsigned($in);
-		$this->addUserData = $protocolId >= ProtocolInfo::PROTOCOL_1_17_30 ?
-			CommonTypes::getBool($in) :
-			false;
+		$this->addUserData = CommonTypes::getBool($in);
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeSignedLong($out, $this->actorUniqueId);
 		Byte::writeUnsigned($out, $this->hotbarSlot);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_17_30){
-			CommonTypes::putBool($out, $this->addUserData);
-		}
+		CommonTypes::putBool($out, $this->addUserData);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

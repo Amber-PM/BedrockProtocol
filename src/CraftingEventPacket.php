@@ -39,7 +39,7 @@ class CraftingEventPacket extends DataPacket implements ServerboundPacket{
 	 * @param ItemStackWrapper[] $input
 	 * @param ItemStackWrapper[] $output
 	 */
-	public static function create(int $windowId, int $windowType, UuidInterface $recipeUUID, array $input, array $output) : self{
+	public static function create(int $windowId, int $windowType, \Ramsey\Uuid\UuidInterface $recipeUUID, array $input, array $output) : self{
 		$result = new self;
 		$result->windowId = $windowId;
 		$result->windowType = $windowType;
@@ -56,16 +56,12 @@ class CraftingEventPacket extends DataPacket implements ServerboundPacket{
 
 		$size = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $size and $i < 128; ++$i){
-			$this->input[] = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
-				CommonTypes::getNetworkItemStackDescriptor($in, $protocolId) :
-				CommonTypes::getItemStackWrapper($in, $protocolId);
+			$this->input[] = CommonTypes::getItemStackWrapper($in, $protocolId, false);
 		}
 
 		$size = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $size and $i < 128; ++$i){
-			$this->output[] = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
-				CommonTypes::getNetworkItemStackDescriptor($in, $protocolId) :
-				CommonTypes::getItemStackWrapper($in, $protocolId);
+			$this->output[] = CommonTypes::getItemStackWrapper($in, $protocolId, false);
 		}
 	}
 
@@ -76,20 +72,12 @@ class CraftingEventPacket extends DataPacket implements ServerboundPacket{
 
 		VarInt::writeUnsignedInt($out, count($this->input));
 		foreach($this->input as $item){
-			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-				CommonTypes::putNetworkItemStackDescriptor($out, $item, $protocolId);
-			}else{
-				CommonTypes::putItemStackWrapper($out, $item, $protocolId);
-			}
+			CommonTypes::putItemStackWrapper($out, $protocolId, $item, false);
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->output));
 		foreach($this->output as $item){
-			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-				CommonTypes::putNetworkItemStackDescriptor($out, $item, $protocolId);
-			}else{
-				CommonTypes::putItemStackWrapper($out, $item, $protocolId);
-			}
+			CommonTypes::putItemStackWrapper($out, $protocolId, $item, false);
 		}
 	}
 

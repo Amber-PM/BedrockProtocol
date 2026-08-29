@@ -20,24 +20,23 @@ use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
-use function count;
 
 final class RecipeUnlockingRequirement{
-	public const CONTEXT_NONE = 0;
-	public const CONTEXT_ALWAYS_UNLOCKED = 1;
-	public const CONTEXT_PLAYER_IN_WATER = 2;
-	public const CONTEXT_PLAYER_HAS_MANY_ITEMS = 3;
 
 	/**
 	 * @param RecipeIngredient[]|null $unlockingIngredients
 	 * @phpstan-param list<RecipeIngredient>|null $unlockingIngredients
 	 */
 	public function __construct(
-		private ?array $unlockingIngredients,
-		private int $unlockingContext = self::CONTEXT_NONE,
-	){}
+		private RecipeUnlockingContext $unlockingContext,
+		private ?array $unlockingIngredients
+	){
+		if($unlockingContext !== RecipeUnlockingContext::NONE && $unlockingIngredients !== null){
+			throw new \InvalidArgumentException("Unlocking ingredients can only be set when unlocking context is NONE");
+		}
+	}
 
-	public function getUnlockingContext() : int{ return $this->unlockingContext; }
+	public function getUnlockingContext() : RecipeUnlockingContext{ return $this->unlockingContext; }
 
 	/**
 	 * @return RecipeIngredient[]|null
@@ -46,65 +45,33 @@ final class RecipeUnlockingRequirement{
 	public function getUnlockingIngredients() : ?array{ return $this->unlockingIngredients; }
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		//I don't know what the point of this structure is. It could easily have been a list<RecipeIngredient> instead.
+		//It's basically just an optional list, which could have been done by an empty list wherever it's not needed.
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$context = VarInt::readSignedInt($in);
-			if($context < self::CONTEXT_NONE || $context > self::CONTEXT_PLAYER_HAS_MANY_ITEMS){
-				throw new PacketDecodeException("Unknown recipe unlocking context $context");
-			}
-			$ingredients = null;
-			$hasIngredients = CommonTypes::getBool($in);
-			if($hasIngredients !== ($context === self::CONTEXT_NONE)){
-				throw new PacketDecodeException("Unlocking ingredients presence does not match context $context");
-			}
-			if($hasIngredients){
-				$ingredients = [];
-				$count = VarInt::readUnsignedInt($in);
-				if($count > 128){
-					throw new PacketDecodeException("Recipe unlocking ingredient count $count exceeds the maximum of 128");
-				}
-				for($i = 0; $i < $count; ++$i){
-					$ingredients[] = RecipeIngredient::read($in, $protocolId);
-				}
-			}
-			return new self($ingredients, $context);
+			$unlockingContext = RecipeUnlockingContext::fromPacket(VarInt::readSignedInt($in));
+			$unlockingIngredients = CommonTypes::readOptional($in, static fn($in) => CommonTypes::readList($in, static fn($in) => CommonTypes::getRecipeIngredient($in, $protocolId)));
+		}else{
+			$unlockingContext = CommonTypes::getBool($in) ? RecipeUnlockingContext::ALWAYS_UNLOCKED : RecipeUnlockingContext::NONE;
+			$unlockingIngredients = $unlockingContext === RecipeUnlockingContext::NONE ?
+				CommonTypes::readList($in, static fn($in) => CommonTypes::getRecipeIngredient($in, $protocolId)) :
+				null;
 		}
-		$unlockingContext = CommonTypes::getBool($in);
-		$unlockingIngredients = null;
-		if(!$unlockingContext){
-			$unlockingIngredients = [];
-			for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
-				$unlockingIngredients[] = CommonTypes::getRecipeIngredient($in, $protocolId);
-			}
+		if($unlockingContext !== RecipeUnlockingContext::NONE && $unlockingIngredients !== null){
+			//this is a runtime error, make sure the correct exception type is thrown
+			throw new PacketDecodeException("Unlocking ingredients should only be set when context is CONTEXT_NONE");
 		}
 
-		return new self($unlockingIngredients);
+		return new self($unlockingContext, $unlockingIngredients);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			if($this->unlockingContext < self::CONTEXT_NONE || $this->unlockingContext > self::CONTEXT_PLAYER_HAS_MANY_ITEMS){
-				throw new \InvalidArgumentException("Unknown recipe unlocking context " . $this->unlockingContext);
-			}
-			VarInt::writeSignedInt($out, $this->unlockingContext);
-			$hasIngredients = $this->unlockingContext === self::CONTEXT_NONE;
-			CommonTypes::putBool($out, $hasIngredients);
-			if($hasIngredients){
-				$ingredients = $this->unlockingIngredients ?? [];
-				if(count($ingredients) > 128){
-					throw new \InvalidArgumentException("Recipe unlocking ingredient count exceeds the maximum of 128");
-				}
-				VarInt::writeUnsignedInt($out, count($ingredients));
-				foreach($ingredients as $ingredient){
-					$ingredient->write($out, $protocolId);
-				}
-			}
-			return;
-		}
-		CommonTypes::putBool($out, $this->unlockingIngredients === null);
-		if($this->unlockingIngredients !== null){
-			VarInt::writeUnsignedInt($out, count($this->unlockingIngredients));
-			foreach($this->unlockingIngredients as $ingredient){
-				CommonTypes::putRecipeIngredient($out, $ingredient, $protocolId);
+			VarInt::writeSignedInt($out, $this->unlockingContext->value);
+			CommonTypes::writeOptional($out, $this->unlockingIngredients, fn($out, $v) => CommonTypes::writeList($out, $v, fn($out, $i) => CommonTypes::putRecipeIngredient($out, $protocolId, $i)));
+		}else{
+			CommonTypes::putBool($out, $this->unlockingIngredients === null);
+			if($this->unlockingIngredients !== null){
+				CommonTypes::writeList($out, $this->unlockingIngredients, fn($out, $i) => CommonTypes::putRecipeIngredient($out, $protocolId, $i));
 			}
 		}
 	}

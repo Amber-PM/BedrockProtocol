@@ -31,7 +31,7 @@ class StructureBlockUpdatePacket extends DataPacket implements ServerboundPacket
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(BlockPosition $blockPosition, StructureEditorData $structureEditorData, bool $isPowered, bool $waterlogged) : self{
+	public static function create(\pocketmine\network\mcpe\protocol\types\BlockPosition $blockPosition, \pocketmine\network\mcpe\protocol\types\StructureEditorData $structureEditorData, bool $isPowered, bool $waterlogged) : self{
 		$result = new self;
 		$result->blockPosition = $blockPosition;
 		$result->structureEditorData = $structureEditorData;
