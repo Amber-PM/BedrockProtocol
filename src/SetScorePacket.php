@@ -34,7 +34,7 @@ class SetScorePacket extends DataPacket implements ClientboundPacket{
 	 * @var ScorePacketEntry[]
 	 * @phpstan-var list<ScorePacketEntry>
 	 */
-	private array $entries = [];
+	public array $entries = [];
 
 	/**
 	 * @generate-create-func
