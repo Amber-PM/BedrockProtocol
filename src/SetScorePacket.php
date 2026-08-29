@@ -130,9 +130,9 @@ class SetScorePacket extends DataPacket implements ClientboundPacket{
 						ScorePacketEntry::TYPE_FAKE_PLAYER => ScorePacketEntryAction::CHANGE_FAKE_PLAYER,
 						default => ScorePacketEntryAction::CHANGE_FAKE_PLAYER,
 					};
-				}elseif(isset($entry->customName) && $entry->customName !== null){
+				}elseif(isset($entry->customName)){
 					$entry->action = ScorePacketEntryAction::CHANGE_FAKE_PLAYER;
-				}elseif(isset($entry->actorUniqueId) && $entry->actorUniqueId !== null){
+				}elseif(isset($entry->actorUniqueId)){
 					$entry->action = ScorePacketEntryAction::CHANGE_PLAYER;
 				}else{
 					$entry->action = ScorePacketEntryAction::CHANGE_FAKE_PLAYER;
