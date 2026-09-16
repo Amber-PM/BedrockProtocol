@@ -257,7 +257,7 @@ final class CameraPreset{
 						CommonTypes::writeOptional($out, $this->controlScheme, fn(ByteBufferWriter $out, ControlScheme $v) => Byte::writeUnsigned($out, $v->value));
 						if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
 							CommonTypes::putBool($out, false); //applyInheritedStartingRotation
-							CommonTypes::writeOptional($out, null, CommonTypes::putVector2(...)); //startingRotation
+							CommonTypes::putBool($out, false); //startingRotation
 						}
 					}
 				}else{

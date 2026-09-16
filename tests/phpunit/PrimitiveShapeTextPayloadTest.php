@@ -54,10 +54,11 @@ class PrimitiveShapeTextPayloadTest extends TestCase{
 
 			self::assertSame("world", $decoded->getText());
 			self::assertFalse($decoded->useRotation());
-			self::assertNotNull($decoded->getBackgroundColor());
-			self::assertSame(255, $decoded->getBackgroundColor()->getR());
-			self::assertSame(0, $decoded->getBackgroundColor()->getG());
-			self::assertSame(128, $decoded->getBackgroundColor()->getB());
+			$backgroundColor = $decoded->getBackgroundColor();
+			self::assertNotNull($backgroundColor);
+			self::assertSame(255, $backgroundColor->getR());
+			self::assertSame(0, $backgroundColor->getG());
+			self::assertSame(128, $backgroundColor->getB());
 			self::assertFalse($decoded->hasDepthTest());
 			self::assertTrue($decoded->hasShowBackface());
 			self::assertFalse($decoded->hasShowTextBackface());
