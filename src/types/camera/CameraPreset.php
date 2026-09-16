@@ -143,6 +143,10 @@ final class CameraPreset{
 					$aimAssist = CommonTypes::readOptional($in, fn() => CameraPresetAimAssist::read($in));
 					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
 						$controlScheme = CommonTypes::readOptional($in, fn() => ControlScheme::fromPacket(Byte::readUnsigned($in)));
+						if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+							CommonTypes::getBool($in); //applyInheritedStartingRotation
+							CommonTypes::readOptional($in, CommonTypes::getVector2(...)); //startingRotation
+						}
 					}
 				}else{
 					$aimAssist = CommonTypes::readOptional($in, fn() => CommonTypes::getBool($in) ? new CameraPresetAimAssist(null, null, null, null) : null);
@@ -251,6 +255,10 @@ final class CameraPreset{
 					CommonTypes::writeOptional($out, $this->aimAssist, fn(ByteBufferWriter $out, CameraPresetAimAssist $v) => $v->write($out));
 					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
 						CommonTypes::writeOptional($out, $this->controlScheme, fn(ByteBufferWriter $out, ControlScheme $v) => Byte::writeUnsigned($out, $v->value));
+						if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+							CommonTypes::putBool($out, false); //applyInheritedStartingRotation
+							CommonTypes::writeOptional($out, null, CommonTypes::putVector2(...)); //startingRotation
+						}
 					}
 				}else{
 					CommonTypes::writeOptional($out, $this->aimAssist, fn(ByteBufferWriter $out, CameraPresetAimAssist $v) => $v->write($out));

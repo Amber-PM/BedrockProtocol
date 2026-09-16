@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pmmp\encoding\Byte;
+use pmmp\encoding\VarInt;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -69,6 +71,10 @@ final class AttributeEnvironment{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
 			$localTransitionTicks = LE::readUnsignedInt($in);
 			$noiseTransition = CommonTypes::getBool($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+				Byte::readUnsigned($in); //noise alignment type
+				VarInt::readUnsignedInt($in); //noise alignment value
+			}
 		}
 
 		return new self(
@@ -95,6 +101,10 @@ final class AttributeEnvironment{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
 			LE::writeUnsignedInt($out, $this->localTransitionTicks);
 			CommonTypes::putBool($out, $this->noiseTransition);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+				Byte::writeUnsigned($out, 0);
+				VarInt::writeUnsignedInt($out, 0);
+			}
 		}
 	}
 }

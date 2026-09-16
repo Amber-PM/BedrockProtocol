@@ -54,6 +54,9 @@ final class DimensionData{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			$packId = CommonTypes::getUUID($in);
 		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+			CommonTypes::getString($in); //default biome
+		}
 
 		return new self($maxHeight, $minHeight, $generator, $dimensionType ?? DimensionIds::OVERWORLD, $packId ?? null);
 	}
@@ -67,6 +70,9 @@ final class DimensionData{
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			CommonTypes::putUUID($out, $this->packId ?? throw new \InvalidArgumentException("packId must be set"));
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+			CommonTypes::putString($out, ""); //default biome
 		}
 	}
 }

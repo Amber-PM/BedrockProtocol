@@ -158,8 +158,13 @@ class NetworkInventoryAction{
 
 		$this->sourceType = VarInt::readUnsignedInt($in);
 
-		$this->windowId = CommonTypes::readDoubleOptional($in, Byte::readSigned(...));
-		$this->sourceFlags = CommonTypes::readDoubleOptional($in, VarInt::readUnsignedInt(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+			$this->windowId = CommonTypes::readOptional($in, Byte::readSigned(...));
+			$this->sourceFlags = CommonTypes::readOptional($in, VarInt::readUnsignedInt(...));
+		}else{
+			$this->windowId = CommonTypes::readDoubleOptional($in, Byte::readSigned(...));
+			$this->sourceFlags = CommonTypes::readDoubleOptional($in, VarInt::readUnsignedInt(...));
+		}
 
 		$this->inventorySlot = VarInt::readUnsignedInt($in);
 		$this->oldItem = CommonTypes::getItemStackWrapper($in, $protocolId, true);
@@ -179,8 +184,13 @@ class NetworkInventoryAction{
 
 		VarInt::writeUnsignedInt($out, $this->sourceType);
 
-		CommonTypes::writeDoubleOptional($out, $this->windowId, Byte::writeSigned(...));
-		CommonTypes::writeDoubleOptional($out, $this->sourceFlags, VarInt::writeUnsignedInt(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+			CommonTypes::writeOptional($out, $this->windowId, Byte::writeSigned(...));
+			CommonTypes::writeOptional($out, $this->sourceFlags, VarInt::writeUnsignedInt(...));
+		}else{
+			CommonTypes::writeDoubleOptional($out, $this->windowId, Byte::writeSigned(...));
+			CommonTypes::writeDoubleOptional($out, $this->sourceFlags, VarInt::writeUnsignedInt(...));
+		}
 
 		VarInt::writeUnsignedInt($out, $this->inventorySlot);
 		CommonTypes::putItemStackWrapper($out, $protocolId, $this->oldItem, true);

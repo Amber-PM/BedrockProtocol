@@ -64,6 +64,8 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_26_30,
 		self::PROTOCOL_1_26_40,
 		self::CURRENT_PROTOCOL,
+		self::PROTOCOL_1_26_50,
+		self::PROTOCOL_1_26_51,
 	];
 
 	/** Display version shown in the server logs. This should match the version on the game's home screen. */
@@ -73,6 +75,9 @@ final class ProtocolInfo{
 
 	//thx mojang :alien:
 	//this is a fictional version of the protocol
+	//1.26.50 shipped as 2193; 2192 is the number CloudburstMC's 26.50 codec (and the preview) use. Both share one format.
+	public const PROTOCOL_1_26_51 = 2193;
+	public const PROTOCOL_1_26_50 = 2192;
 	public const PROTOCOL_1_26_44 = 2169;
 	public const PROTOCOL_1_26_40 = 2168;
 	public const PROTOCOL_1_26_30 = 1001;
@@ -352,5 +357,7 @@ final class ProtocolInfo{
 	public const CLIENTBOUND_UPDATE_SOUND_DATA_PACKET = 0x15c;
 	public const SEND_PARTY_DESTINATION_COOKIE_PACKET = 0x15d;
 	public const PARTY_DESTINATION_COOKIE_RESPONSE_PACKET = 0x15e;
+	public const SET_PLAYER_FURNACE_OPTIONS_PACKET = 0x15f;
+	public const RECORD_STARTED_PACKET = 0x160;
 
 }

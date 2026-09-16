@@ -265,6 +265,8 @@ class PacketPool{
 		$this->registerPacket(new LocatorBarPacket());
 		$this->registerPacket(new PartyChangedPacket());
 		$this->registerPacket(new ServerboundDataDrivenScreenClosedPacket());
+		$this->registerPacket(new SetPlayerFurnaceOptionsPacket());
+		$this->registerPacket(new RecordStartedPacket());
 		$this->registerPacket(new SyncWorldClocksPacket());
 		$this->registerPacket(new ClientboundAttributeLayerSyncPacket());
 		$this->registerPacket(new ServerStoreInfoPacket());

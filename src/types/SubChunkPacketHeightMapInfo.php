@@ -39,16 +39,22 @@ class SubChunkPacketHeightMapInfo{
 		return $this->heights[(($z & 0xf) << 4) | ($x & 0xf)];
 	}
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, bool $rowPrefixed = false) : self{
 		$heights = [];
 		for($i = 0; $i < 256; ++$i){
+			if($rowPrefixed && ($i & 0xf) === 0 && ($len = \pmmp\encoding\VarInt::readUnsignedInt($in)) !== 16){
+				throw new \pocketmine\network\mcpe\protocol\PacketDecodeException("Expected heightmap row length 16, got $len");
+			}
 			$heights[] = Byte::readSigned($in);
 		}
 		return new self($heights);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, bool $rowPrefixed = false) : void{
 		for($i = 0; $i < 256; ++$i){
+			if($rowPrefixed && ($i & 0xf) === 0){
+				\pmmp\encoding\VarInt::writeUnsignedInt($out, 16);
+			}
 			Byte::writeSigned($out, $this->heights[$i]);
 		}
 	}

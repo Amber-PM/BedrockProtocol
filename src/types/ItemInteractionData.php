@@ -57,7 +57,7 @@ final class ItemInteractionData{
 			$requestChangedSlots = CommonTypes::readList($in, InventoryTransactionChangedSlotsHack::read(...));
 		}
 		$transactionData = new UseItemTransactionData();
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40 && $protocolId < ProtocolInfo::PROTOCOL_1_26_50){
 			CommonTypes::readDummyOptional($in);
 			CommonTypes::readDummyOptional($in);
 		}
@@ -69,8 +69,10 @@ final class ItemInteractionData{
 		VarInt::writeSignedInt($out, $this->requestId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			CommonTypes::writeOptional($out, $this->requestChangedSlots, static fn($out, $list) => CommonTypes::writeList($out, $list, static fn($out, $v) => $v->write($out)));
-			CommonTypes::writeDummyOptional($out);
-			CommonTypes::writeDummyOptional($out);
+			if($protocolId < ProtocolInfo::PROTOCOL_1_26_50){
+				CommonTypes::writeDummyOptional($out);
+				CommonTypes::writeDummyOptional($out);
+			}
 		}elseif($this->requestId !== 0){
 			CommonTypes::writeList($out, $this->requestChangedSlots ?? [], static fn($out, $v) => $v->write($out));
 		}

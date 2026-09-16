@@ -172,7 +172,14 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 			$this->memoryCategoryValues = CommonTypes::readList($in, MemoryCategoryCounter::read(...));
 
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
-				$this->entityDiagnostics = CommonTypes::readList($in, EntityDiagnosticTimingInfo::read(...));
+				$this->entityDiagnostics = CommonTypes::readList($in, static function(ByteBufferReader $in) use ($protocolId) : EntityDiagnosticTimingInfo{
+					$info = EntityDiagnosticTimingInfo::read($in);
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+						CommonTypes::getVector3($in); //position
+						CommonTypes::getString($in); //dimension
+					}
+					return $info;
+				});
 				$this->systemDiagnostics = CommonTypes::readList($in, SystemDiagnosticTimingInfo::read(...));
 
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
