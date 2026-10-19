@@ -18,11 +18,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use function basename;
 use function bin2hex;
+use function chmod;
+use function clearstatcache;
 use function copy;
 use function dirname;
 use function fclose;
 use function file_get_contents;
 use function file_put_contents;
+use function fileperms;
 use function glob;
 use function hash_file;
 use function is_file;
@@ -38,7 +41,9 @@ use function stream_get_contents;
 use function strtolower;
 use function sys_get_temp_dir;
 use function trim;
+use function umask;
 use function unlink;
+use const PHP_OS_FAMILY;
 
 final class ProtocolInfoGeneratorTest extends TestCase{
 	private string $directory;
@@ -237,5 +242,78 @@ final class ProtocolInfoGeneratorTest extends TestCase{
 		self::assertNotSame(0, $status, $output);
 		self::assertFileDoesNotExist($this->directory . '/tools/called');
 		self::assertSame($before, $this->snapshot());
+	}
+
+	public function testGenerationPreservesExistingPermissionsAndContent() : void{
+		$protocolInfoPath = $this->directory . '/src/ProtocolInfo.php';
+		if(PHP_OS_FAMILY !== 'Windows'){
+			chmod($protocolInfoPath, 0640);
+		}
+		clearstatcache(true, $protocolInfoPath);
+		$expectedPerms = fileperms($protocolInfoPath) & 0777;
+		$originalContent = self::readFile($protocolInfoPath);
+
+		[$status, $output] = $this->runGenerator(json_encode(self::validInput(), JSON_THROW_ON_ERROR));
+		self::assertSame(0, $status, $output);
+
+		clearstatcache(true, $protocolInfoPath);
+		self::assertSame($expectedPerms, fileperms($protocolInfoPath) & 0777);
+		if(PHP_OS_FAMILY !== 'Windows'){
+			self::assertSame(0640, fileperms($protocolInfoPath) & 0777);
+		}
+		self::assertSame($originalContent, self::readFile($protocolInfoPath));
+	}
+
+	public function testNewPacketStubGenerationRespectsUmaskAndHasExpectedContent() : void{
+		$path = $this->directory . '/tools/ProtocolInfo.php.template';
+		$source = str_replace(
+			'public const RECORD_STARTED_PACKET = 0x160;',
+			"public const RECORD_STARTED_PACKET = 0x160;\n\tpublic const EXAMPLE_PACKET = 0x161;",
+			self::readFile($path)
+		);
+		file_put_contents($path, $source);
+
+		$input = self::validInput();
+		$input['packets']['ExamplePacket'] = 353;
+
+		[$status, $output] = $this->runGenerator(json_encode($input, JSON_THROW_ON_ERROR));
+		self::assertSame(0, $status, $output);
+
+		$newPacketPath = $this->directory . '/src/ExamplePacket.php';
+		self::assertFileExists($newPacketPath);
+		clearstatcache(true, $newPacketPath);
+
+		if(PHP_OS_FAMILY !== 'Windows'){
+			$expectedPerms = 0666 & ~umask();
+			self::assertSame($expectedPerms, fileperms($newPacketPath) & 0777);
+		}
+
+		$content = self::readFile($newPacketPath);
+		self::assertStringContainsString('class ExamplePacket extends DataPacket', $content);
+		self::assertStringContainsString('public const NETWORK_ID = ProtocolInfo::EXAMPLE_PACKET;', $content);
+	}
+
+	public function testFailureCleansUpTemporaryFilesAndPreservesOriginalFile() : void{
+		$protocolInfoPath = $this->directory . '/src/ProtocolInfo.php';
+		if(PHP_OS_FAMILY !== 'Windows'){
+			chmod($protocolInfoPath, 0640);
+		}
+		clearstatcache(true, $protocolInfoPath);
+		$originalPerms = fileperms($protocolInfoPath) & 0777;
+		$originalContent = self::readFile($protocolInfoPath);
+
+		$packetPoolPath = $this->directory . '/src/PacketPool.php';
+		unlink($packetPoolPath);
+		mkdir($packetPoolPath);
+		file_put_contents($packetPoolPath . '/sentinel', 'preserved');
+
+		[$status, $output] = $this->runGenerator(json_encode(self::validInput(), JSON_THROW_ON_ERROR));
+		self::assertNotSame(0, $status, $output);
+
+		clearstatcache(true, $protocolInfoPath);
+		self::assertSame($originalContent, self::readFile($protocolInfoPath));
+		self::assertSame($originalPerms, fileperms($protocolInfoPath) & 0777);
+		self::assertSame('preserved', self::readFile($packetPoolPath . '/sentinel'));
+		self::assertSame([], glob($this->directory . '/src/.protocol-info-*'));
 	}
 }

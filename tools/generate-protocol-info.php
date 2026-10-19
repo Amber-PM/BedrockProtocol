@@ -26,11 +26,14 @@ use function array_fill_keys;
 use function array_unique;
 use function asort;
 use function ceil;
+use function chmod;
+use function clearstatcache;
 use function count;
 use function dirname;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
+use function fileperms;
 use function fwrite;
 use function implode;
 use function in_array;
@@ -52,6 +55,7 @@ use function strlen;
 use function strtoupper;
 use function substr;
 use function tempnam;
+use function umask;
 use function unlink;
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
@@ -308,6 +312,10 @@ function generate_protocol_info(string $source, string $packetsDir) : void{
  * Publish a complete file only after the write succeeds.
  */
 function write_generated_file(string $path, string $contents) : void{
+	clearstatcache(true, $path);
+	$existingPerms = file_exists($path) ? fileperms($path) : false;
+	$perms = $existingPerms !== false ? ($existingPerms & 0777) : (0666 & ~umask());
+
 	$temporary = tempnam(dirname($path), '.protocol-info-');
 	if($temporary === false){
 		throw new \RuntimeException("Cannot create temporary output for $path");
@@ -315,6 +323,9 @@ function write_generated_file(string $path, string $contents) : void{
 	try{
 		if(file_put_contents($temporary, $contents) !== strlen($contents)){
 			throw new \RuntimeException("Cannot write complete output for $path");
+		}
+		if(!chmod($temporary, $perms)){
+			throw new \RuntimeException("Cannot set permissions on temporary output for $path");
 		}
 		if(!rename($temporary, $path)){
 			throw new \RuntimeException("Cannot publish output $path");
