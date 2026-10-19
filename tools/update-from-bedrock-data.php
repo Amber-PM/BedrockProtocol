@@ -17,7 +17,14 @@ if(count($argv) < 2){
 	exit(1);
 }
 
-passthru(PHP_BINARY . " " . __DIR__ . '/generate-protocol-info.php ' . escapeshellarg($argv[1] . '/protocol_info.json'));
-passthru(PHP_BINARY . " " . __DIR__ . '/generate-entity-ids.php ' . escapeshellarg($argv[1] . '/entity_id_map.json'));
-passthru(PHP_BINARY . " " . __DIR__ . '/generate-level-sound-ids.php ' . escapeshellarg($argv[1] . '/level_sound_id_map.json'));
-passthru(PHP_BINARY . " " . __DIR__ . '/generate-command-parameter-types.php ' . escapeshellarg($argv[1] . '/command_arg_types.json'));
+foreach([
+	'generate-protocol-info.php' => 'protocol_info.json',
+	'generate-entity-ids.php' => 'entity_id_map.json',
+	'generate-level-sound-ids.php' => 'level_sound_id_map.json',
+	'generate-command-parameter-types.php' => 'command_arg_types.json',
+] as $generator => $input){
+	passthru(escapeshellarg(PHP_BINARY) . " " . escapeshellarg(__DIR__ . '/' . $generator) . " " . escapeshellarg($argv[1] . '/' . $input), $status);
+	if($status !== 0){
+		exit($status);
+	}
+}

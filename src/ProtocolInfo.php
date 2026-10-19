@@ -28,7 +28,7 @@ final class ProtocolInfo{
 	 * Do not waste your time or ours submitting pull requests changing game and/or protocol version numbers.
 	 * Pull requests changing game and/or protocol version numbers will be closed.
 	 *
-	 * This file is generated automatically, do not edit it manually.
+	 * Generated from tools/ProtocolInfo.php.template, edit that source, then regenerate.
 	 */
 
 	/** Actual Minecraft: PE protocol version */
@@ -63,7 +63,7 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_26_20,
 		self::PROTOCOL_1_26_30,
 		self::PROTOCOL_1_26_40,
-		self::CURRENT_PROTOCOL,
+		self::PROTOCOL_1_26_44,
 		self::PROTOCOL_1_26_50,
 		self::PROTOCOL_1_26_51,
 	];

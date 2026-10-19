@@ -23,32 +23,36 @@ use pocketmine\network\mcpe\protocol\PacketHandlerInterface;
 use pocketmine\network\mcpe\protocol\PacketPool;
 use pocketmine\network\mcpe\protocol\ServerboundPacket;
 use function array_fill_keys;
+use function array_unique;
 use function asort;
 use function ceil;
 use function count;
-use function dechex;
 use function dirname;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function fwrite;
 use function implode;
+use function in_array;
 use function is_array;
 use function is_bool;
 use function is_int;
 use function is_string;
 use function json_decode;
+use function ksort;
 use function max;
+use function preg_match;
 use function preg_split;
+use function rename;
 use function scandir;
 use function sprintf;
 use function str_contains;
 use function str_ends_with;
-use function str_pad;
 use function strlen;
-use function strrpos;
 use function strtoupper;
 use function substr;
+use function tempnam;
+use function unlink;
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
@@ -56,7 +60,6 @@ use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 use const SORT_NUMERIC;
 use const STDERR;
-use const STR_PAD_LEFT;
 
 const DATA_PACKET_TEMPLATE = <<<'CODE'
 <?php
@@ -227,54 +230,6 @@ class PacketPool{
 
 CODE;
 
-const PROTOCOL_INFO_TEMPLATE = <<<'CODE'
-<?php
-
-/*
- * This file is part of BedrockProtocol.
- * Copyright (C) 2014-2022 PocketMine Team <https://github.com/pmmp/BedrockProtocol>
- *
- * BedrockProtocol is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
-
-declare(strict_types=1);
-
-namespace pocketmine\network\mcpe\protocol;
-
-/**
- * Version numbers and packet IDs for the current Minecraft PE protocol
- */
-final class ProtocolInfo{
-
-	private function __construct(){
-		//NOOP
-	}
-
-	/**
-	 * NOTE TO DEVELOPERS
-	 * Do not waste your time or ours submitting pull requests changing game and/or protocol version numbers.
-	 * Pull requests changing game and/or protocol version numbers will be closed.
-	 *
-	 * This file is generated automatically, do not edit it manually.
-	 */
-
-	/** Actual Minecraft: PE protocol version */
-	public const CURRENT_PROTOCOL = %d;
-	/** Display version shown in the server logs. This should match the version on the game's home screen. */
-	public const MINECRAFT_VERSION = '%s';
-	/** Version sent on the network for client side compatibility checks. This may differ from the display version. */
-	public const MINECRAFT_VERSION_NETWORK = '%s';
-
-%s
-}
-
-CODE;
-
-const CPP_NAMESPACE_SEPARATOR = "::";
-
 /**
  * @return string[]
  */
@@ -304,7 +259,7 @@ function generate_new_packet_stubs(array $packetToIdList, string $packetsDir) : 
 			echo "!!! New packet: $name" . PHP_EOL;
 			$constName = strtoupper(implode('_', split_upper($name)));
 			$baseName = rchop($name, 'Packet');
-			file_put_contents($packetFilePath, sprintf(DATA_PACKET_TEMPLATE, $name, $constName, $baseName));
+			write_generated_file($packetFilePath, sprintf(DATA_PACKET_TEMPLATE, $name, $constName, $baseName));
 			echo "Created stub class for $name at $packetFilePath" . PHP_EOL;
 		}
 	}
@@ -344,44 +299,85 @@ function check_removed_packets(array $packetToIdList, string $packetsDir) : void
 	}
 }
 
-/**
- * @param string[] $packetToIdList
- * @phpstan-param array<string, int> $packetToIdList
- */
-function generate_protocol_info(array $packetToIdList, int $protocolVersion, int $major, int $minor, int $patch, int $revision, bool $beta, string $packetsDir) : void{
-	$consts = "";
-	$last = 0;
-
-	foreach($packetToIdList as $name => $id){
-		if($id !== $last + 1){
-			$consts .= "\n";
-		}
-
-		$last = $id;
-		$consts .= sprintf(
-			"\tpublic const %s = %s;\n",
-			strtoupper(implode("_", split_upper($name))),
-			"0x" . str_pad(dechex($id), 2, "0", STR_PAD_LEFT)
-		);
-	}
-
-	if($major === 1 && $minor >= 26){
-		//major version is no longer displayed as of 1.26.0, presumably because the 1 is meaningless
-		//however it is still shown in the network version for BC reasons
-		$gameVersion = sprintf("v%d.%d%s", $minor, $patch, $beta ? ".$revision beta" : "");
-	}else{
-		$gameVersion = sprintf("v%d.%d.%d%s", $major, $minor, $patch, $beta ? ".$revision beta" : "");
-	}
-	$gameVersionNetwork = sprintf("%d.%d.%d%s", $major, $minor, $patch, $beta ? ".$revision" : "");
-	file_put_contents($packetsDir . DIRECTORY_SEPARATOR . "ProtocolInfo.php", sprintf(
-		PROTOCOL_INFO_TEMPLATE,
-		$protocolVersion,
-		$gameVersion,
-		$gameVersionNetwork,
-		$consts
-	));
-
+function generate_protocol_info(string $source, string $packetsDir) : void{
+	write_generated_file($packetsDir . DIRECTORY_SEPARATOR . "ProtocolInfo.php", $source);
 	echo "Recreated ProtocolInfo" . PHP_EOL;
+}
+
+/**
+ * Publish a complete file only after the write succeeds.
+ */
+function write_generated_file(string $path, string $contents) : void{
+	$temporary = tempnam(dirname($path), '.protocol-info-');
+	if($temporary === false){
+		throw new \RuntimeException("Cannot create temporary output for $path");
+	}
+	try{
+		if(file_put_contents($temporary, $contents) !== strlen($contents)){
+			throw new \RuntimeException("Cannot write complete output for $path");
+		}
+		if(!rename($temporary, $path)){
+			throw new \RuntimeException("Cannot publish output $path");
+		}
+	}finally{
+		if(file_exists($temporary)){
+			unlink($temporary);
+		}
+	}
+}
+
+/**
+ * The checked-in template, not the destination file or BedrockData, owns multiversion policy.
+ * @param array<string, int> $packetToIdList
+ */
+function validate_protocol_info(array $packetToIdList, int $protocolVersion, string $gameVersion, string $networkVersion) : string{
+	$templatePath = __DIR__ . '/ProtocolInfo.php.template';
+	$source = file_get_contents($templatePath);
+	if($source === false){
+		throw new \RuntimeException("Cannot read canonical ProtocolInfo template");
+	}
+	require $templatePath;
+	$reflection = new \ReflectionClass(\pocketmine\network\mcpe\protocol\ProtocolInfo::class);
+	$constants = $reflection->getConstants();
+	$accepted = $constants['ACCEPTED_PROTOCOL'] ?? null;
+	if(!is_array($accepted) || $accepted === [] || count(array_unique($accepted, SORT_REGULAR)) !== count($accepted)){
+		throw new \RuntimeException("Invalid accepted protocols in canonical template");
+	}
+	foreach($accepted as $protocol){
+		if(!is_int($protocol) || $protocol <= 0){
+			throw new \RuntimeException("Invalid accepted protocol in canonical template");
+		}
+	}
+	if(($constants['CURRENT_PROTOCOL'] ?? null) !== $protocolVersion ||
+		($constants['MINECRAFT_VERSION'] ?? null) !== $gameVersion ||
+		($constants['MINECRAFT_VERSION_NETWORK'] ?? null) !== $networkVersion ||
+		!in_array($protocolVersion, $accepted, true)){
+		throw new \RuntimeException("Input version is incompatible with canonical ProtocolInfo template; review the template explicitly before updating versions");
+	}
+	$expectedPackets = [];
+	foreach($constants as $name => $value){
+		// This historical ID has no packet implementation and must not generate a new stub
+		if(str_contains($name, '_PACKET') && $name !== 'ADVENTURE_SETTINGS_PACKET'){
+			if(!is_int($value) || $value <= 0 || $value > 0x3ff){
+				throw new \RuntimeException("Invalid packet ID in canonical template: $name");
+			}
+			$expectedPackets[$name] = $value;
+		}
+	}
+	$actualPackets = [];
+	foreach($packetToIdList as $name => $id){
+		$constant = strtoupper(implode('_', split_upper($name)));
+		if(isset($actualPackets[$constant])){
+			throw new \RuntimeException("Packet constant name collision: $constant");
+		}
+		$actualPackets[$constant] = $id;
+	}
+	ksort($actualPackets);
+	ksort($expectedPackets);
+	if($expectedPackets === [] || $actualPackets !== $expectedPackets){
+		throw new \RuntimeException("Input packets are incomplete or incompatible with canonical ProtocolInfo template (including historical packets); review packet changes explicitly in the template");
+	}
+	return $source;
 }
 
 /**
@@ -396,7 +392,7 @@ function generate_packet_pool(array $packetToIdList, string $packetsDir) : void{
 	}
 
 	$poolSize = (int) (ceil(max($packetToIdList) / 256) * 256);
-	file_put_contents($packetsDir . DIRECTORY_SEPARATOR . "PacketPool.php", sprintf(
+	write_generated_file($packetsDir . DIRECTORY_SEPARATOR . "PacketPool.php", sprintf(
 		PACKET_POOL_TEMPLATE,
 		$poolSize,
 		$entries
@@ -418,12 +414,12 @@ function generate_packet_handler_classes(array $packetToIdList, string $packetsD
 		$traitFunctions[] = sprintf("\tpublic function handle%s(%s \$packet) : bool{\n\t\treturn false;\n\t}", $baseName, $name);
 	}
 
-	file_put_contents($packetsDir . DIRECTORY_SEPARATOR . "PacketHandlerInterface.php", sprintf(
+	write_generated_file($packetsDir . DIRECTORY_SEPARATOR . "PacketHandlerInterface.php", sprintf(
 		PACKET_HANDLER_INTERFACE_TEMPLATE,
 		implode("\n\n", $interfaceFunctions)
 	));
 	echo "Recreated PacketHandlerInterface" . PHP_EOL;
-	file_put_contents($packetsDir . DIRECTORY_SEPARATOR . "PacketHandlerDefaultImplTrait.php", sprintf(
+	write_generated_file($packetsDir . DIRECTORY_SEPARATOR . "PacketHandlerDefaultImplTrait.php", sprintf(
 		PACKET_HANDLER_TRAIT_TEMPLATE,
 		implode("\n\n", $traitFunctions)
 	));
@@ -459,7 +455,7 @@ $patch = $versionInfo["patch"] ?? null;
 $revision = $versionInfo["revision"] ?? null;
 $beta = $versionInfo["beta"] ?? null;
 $protocolVersion = $versionInfo["protocol_version"] ?? null;
-if(!is_int($major) || !is_int($minor) || !is_int($patch) || !is_int($revision) || !is_bool($beta) || !is_int($protocolVersion)){
+if(!is_int($major) || !is_int($minor) || !is_int($patch) || !is_int($revision) || !is_bool($beta) || !is_int($protocolVersion) || $major < 0 || $minor < 0 || $patch < 0 || $revision < 0 || $protocolVersion <= 0){
 	fwrite(STDERR, "Invalid version info, expected \"major\" (int), \"minor\" (int), \"patch\" (int), \"revision\" (int), \"beta\" (bool) and \"protocol_version\" (int)" . PHP_EOL);
 	exit(1);
 }
@@ -468,23 +464,28 @@ echo "Generating code basics for version $major.$minor.$patch.$revision " . ($be
 
 $packetToIdList = [];
 foreach($json["packets"] as $name => $id){
-	if(!is_string($name) || !is_int($id)){
-		fwrite(STDERR, "Invalid packet entry \"$name\", expected string => int" . PHP_EOL);
+	if(!is_string($name) || preg_match('/^[A-Z][A-Za-z0-9]*(?:Packet|PacketV[1-9][0-9]*)$/D', $name) !== 1 || !is_int($id) || $id <= 0 || $id > 0x3ff || in_array($id, $packetToIdList, true)){
+		fwrite(STDERR, "Invalid packet entry \"$name\", expected a packet class name and a unique ID in 1..1023" . PHP_EOL);
 		exit(1);
-	}
-	$namespaceSeparatorPos = strrpos($name, CPP_NAMESPACE_SEPARATOR);
-	if($namespaceSeparatorPos !== false){
-		//TODO: namespaced packet - discard namespace for now and just hope this is OK? This would be a real pain to
-		//deal with otherwise :(
-		echo "Warning: Discarded C++ namespace for $name - this might result in class name conflicts" . PHP_EOL;
-		$name = substr($name, $namespaceSeparatorPos + strlen(CPP_NAMESPACE_SEPARATOR));
 	}
 	$packetToIdList[$name] = $id;
 }
 asort($packetToIdList, SORT_NUMERIC);
 
+// Validate every input and canonical precondition before any generator writes a file
+$gameVersion = $major === 1 && $minor >= 26
+	? sprintf("v%d.%d%s", $minor, $patch, $beta ? ".$revision beta" : "")
+	: sprintf("v%d.%d.%d%s", $major, $minor, $patch, $beta ? ".$revision beta" : "");
+$networkVersion = sprintf("%d.%d.%d%s", $major, $minor, $patch, $beta ? ".$revision" : "");
+try{
+	$protocolInfoSource = validate_protocol_info($packetToIdList, $protocolVersion, $gameVersion, $networkVersion);
+}catch(\Throwable $e){
+	fwrite(STDERR, "Cannot generate protocol info: " . $e->getMessage() . PHP_EOL);
+	exit(1);
+}
+
 $packetsDir = dirname(__DIR__) . '/src/';
-generate_protocol_info($packetToIdList, $protocolVersion, $major, $minor, $patch, $revision, $beta, $packetsDir);
+generate_protocol_info($protocolInfoSource, $packetsDir);
 generate_packet_pool($packetToIdList, $packetsDir);
 generate_packet_handler_classes($packetToIdList, $packetsDir);
 check_removed_packets($packetToIdList, $packetsDir);
