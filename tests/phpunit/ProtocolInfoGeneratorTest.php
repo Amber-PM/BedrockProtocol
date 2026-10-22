@@ -175,26 +175,76 @@ final class ProtocolInfoGeneratorTest extends TestCase{
 		self::assertSame($before, $this->snapshot());
 	}
 
-	public function testStaleBedrockDataIsRejected() : void{
+	/** @return iterable<string, array{array<string, int|bool>}> */
+	public static function staleVersions() : iterable{
+		yield 'stale BedrockData' => [['major' => 1, 'minor' => 26, 'patch' => 30, 'revision' => 31, 'beta' => false, 'protocol_version' => 1001]];
+		yield 'previous default' => [['major' => 1, 'minor' => 26, 'patch' => 44, 'revision' => 0, 'beta' => false, 'protocol_version' => 2169]];
+		//same game version, distinct protocol
+		yield '26.50 preview protocol' => [['major' => 1, 'minor' => 26, 'patch' => 50, 'revision' => 0, 'beta' => false, 'protocol_version' => 2192]];
+	}
+
+	/**
+	 * @param array<string, int|bool> $version
+	 * @dataProvider staleVersions
+	 */
+	#[DataProvider('staleVersions')]
+	public function testStaleBedrockDataIsRejected(array $version) : void{
 		$before = $this->snapshot();
 		$input = self::validInput();
-		$input['version'] = ['major' => 1, 'minor' => 26, 'patch' => 30, 'revision' => 31, 'beta' => false, 'protocol_version' => 1001];
+		$input['version'] = $version;
 		[$status, $output] = $this->runGenerator(json_encode($input, JSON_THROW_ON_ERROR));
 		self::assertNotSame(0, $status, $output);
 		self::assertStringContainsString('version', strtolower($output));
 		self::assertSame($before, $this->snapshot());
 	}
 
-	public function testExplicitTemplateVersionUpdateCanBeRegenerated() : void{
+	/** @return iterable<string, array{array<string, string>, array<string, int>}> */
+	public static function templateVersionUpdates() : iterable{
+		yield 'other accepted 26.50 protocol' => [
+			['CURRENT_PROTOCOL = self::PROTOCOL_1_26_51' => 'CURRENT_PROTOCOL = self::PROTOCOL_1_26_50'],
+			['protocol_version' => 2192]
+		];
+		//synthetic, only proves a later explicit update still regenerates
+		yield 'future protocol' => [
+			[
+				'CURRENT_PROTOCOL = self::PROTOCOL_1_26_51' => 'CURRENT_PROTOCOL = self::PROTOCOL_1_99_0',
+				'self::PROTOCOL_1_26_51,' => 'self::PROTOCOL_1_26_51, self::PROTOCOL_1_99_0,',
+				'public const PROTOCOL_1_26_51 = 2193;' => 'public const PROTOCOL_1_99_0 = 9999; public const PROTOCOL_1_26_51 = 2193;',
+				"'v26.50'" => "'v99.0'",
+				"'1.26.50'" => "'1.99.0'",
+			],
+			['minor' => 99, 'patch' => 0, 'protocol_version' => 9999]
+		];
+	}
+
+	/**
+	 * @param array<string, string> $replacements
+	 * @param array<string, int>    $version
+	 * @dataProvider templateVersionUpdates
+	 */
+	#[DataProvider('templateVersionUpdates')]
+	public function testExplicitTemplateVersionUpdateCanBeRegenerated(array $replacements, array $version) : void{
 		$path = $this->directory . '/tools/ProtocolInfo.php.template';
-		$source = str_replace(['CURRENT_PROTOCOL = self::PROTOCOL_1_26_44', "'v26.44'", "'1.26.44'"], ['CURRENT_PROTOCOL = self::PROTOCOL_1_26_50', "'v26.50'", "'1.26.50'"], self::readFile($path));
+		$original = self::readFile($path);
+		$source = $original;
+		foreach($replacements as $search => $replace){
+			$updated = str_replace($search, $replace, $source, $count);
+			self::assertSame(1, $count, "Template must contain $search exactly once");
+			$source = $updated;
+		}
 		file_put_contents($path, $source);
 		$input = self::validInput();
-		$input['version']['protocol_version'] = 2192;
-		$input['version']['patch'] = 50;
+		$input['version'] = $version + $input['version'];
 		[$status, $output] = $this->runGenerator(json_encode($input, JSON_THROW_ON_ERROR));
 		self::assertSame(0, $status, $output);
 		self::assertSame($source, self::readFile($this->directory . '/src/ProtocolInfo.php'));
+
+		//regenerating against the unchanged template must now fail
+		file_put_contents($path, $original);
+		$before = $this->snapshot();
+		[$status, $output] = $this->runGenerator(json_encode($input, JSON_THROW_ON_ERROR));
+		self::assertNotSame(0, $status, $output);
+		self::assertSame($before, $this->snapshot());
 	}
 
 	public function testPacketChangesRequireExplicitCanonicalUpdate() : void{
@@ -315,5 +365,4 @@ final class ProtocolInfoGeneratorTest extends TestCase{
 		self::assertSame($originalPerms, fileperms($protocolInfoPath) & 0777);
 		self::assertSame('preserved', self::readFile($packetPoolPath . '/sentinel'));
 		self::assertSame([], glob($this->directory . '/src/.protocol-info-*'));
-	}
-}
+	}}
