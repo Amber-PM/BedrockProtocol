@@ -25,13 +25,17 @@ use Ramsey\Uuid\UuidInterface;
  * Spec name: DimensionDefinition
  */
 final class DimensionData{
+	//vanilla overworld cloud layer
+	public const DEFAULT_CLOUD_HEIGHT = 192;
 
 	public function __construct(
 		private int $maxHeight,
 		private int $minHeight,
 		private int $generator,
 		private int $dimensionType,
-		private ?UuidInterface $packId = null
+		private ?UuidInterface $packId = null,
+		private int $cloudHeight = self::DEFAULT_CLOUD_HEIGHT,
+		private bool $renderClouds = true
 	){}
 
 	public function getMaxHeight() : int{ return $this->maxHeight; }
@@ -43,6 +47,10 @@ final class DimensionData{
 	public function getDimensionType() : int{ return $this->dimensionType; }
 
 	public function getPackId() : ?UuidInterface{ return $this->packId; }
+
+	public function getCloudHeight() : int{ return $this->cloudHeight; }
+
+	public function isRenderClouds() : bool{ return $this->renderClouds; }
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$maxHeight = VarInt::readSignedInt($in);
@@ -57,8 +65,12 @@ final class DimensionData{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
 			CommonTypes::getString($in); //default biome
 		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			$cloudHeight = VarInt::readSignedInt($in);
+			$renderClouds = CommonTypes::getBool($in);
+		}
 
-		return new self($maxHeight, $minHeight, $generator, $dimensionType ?? DimensionIds::OVERWORLD, $packId ?? null);
+		return new self($maxHeight, $minHeight, $generator, $dimensionType ?? DimensionIds::OVERWORLD, $packId ?? null, $cloudHeight ?? self::DEFAULT_CLOUD_HEIGHT, $renderClouds ?? true);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
@@ -73,6 +85,10 @@ final class DimensionData{
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
 			CommonTypes::putString($out, ""); //default biome
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			VarInt::writeSignedInt($out, $this->cloudHeight);
+			CommonTypes::putBool($out, $this->renderClouds);
 		}
 	}
 }

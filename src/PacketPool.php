@@ -265,8 +265,6 @@ class PacketPool{
 		$this->registerPacket(new LocatorBarPacket());
 		$this->registerPacket(new PartyChangedPacket());
 		$this->registerPacket(new ServerboundDataDrivenScreenClosedPacket());
-		$this->registerPacket(new SetPlayerFurnaceOptionsPacket());
-		$this->registerPacket(new RecordStartedPacket());
 		$this->registerPacket(new SyncWorldClocksPacket());
 		$this->registerPacket(new ClientboundAttributeLayerSyncPacket());
 		$this->registerPacket(new ServerStoreInfoPacket());
@@ -274,6 +272,16 @@ class PacketPool{
 		$this->registerPacket(new ClientboundUpdateSoundDataPacket());
 		$this->registerPacket(new SendPartyDestinationCookiePacket());
 		$this->registerPacket(new PartyDestinationCookieResponsePacket());
+		$this->registerPacket(new SetPlayerFurnaceOptionsPacket());
+		$this->registerPacket(new RecordStartedPacket());
+		$this->registerPacket(new ClientboundMatchmakingStatePacket());
+		$this->registerPacket(new ServerboundStonecutterSetRecipePacket());
+		$this->registerPacket(new ClientboundStonecutterSetRecipePacket());
+		$this->registerPacket(new ServerboundMatchmakingCancelPacket());
+		$this->registerPacket(new SetPassengerOfBlockPacket());
+		$this->registerPacket(new ServerboundCursorItemDragPacket());
+		$this->registerPacket(new ClientboundPlayAudioContentPacket());
+		$this->registerPacket(new ServerboundRegisterAudioContentPacket());
 	}
 
 	public function registerPacket(Packet $packet) : void{
