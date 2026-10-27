@@ -26,6 +26,7 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityLink;
 use pocketmine\network\mcpe\protocol\types\entity\MetadataProperty;
 use pocketmine\network\mcpe\protocol\types\entity\PropertySyncData;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
+use pocketmine\network\mcpe\protocol\types\PassengerOfBlockData;
 use Ramsey\Uuid\UuidInterface;
 use function count;
 
@@ -56,6 +57,7 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 	public array $links = [];
 	public string $deviceId = ""; //TODO: fill player's device ID (???)
 	public int $buildPlatform = DeviceOS::UNKNOWN;
+	public ?PassengerOfBlockData $passengerBlockData = null;
 
 	/**
 	 * @generate-create-func
@@ -81,6 +83,7 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		array $links,
 		string $deviceId,
 		int $buildPlatform,
+		?PassengerOfBlockData $passengerBlockData = null,
 	) : self{
 		$result = new self;
 		$result->uuid = $uuid;
@@ -100,6 +103,7 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		$result->links = $links;
 		$result->deviceId = $deviceId;
 		$result->buildPlatform = $buildPlatform;
+		$result->passengerBlockData = $passengerBlockData;
 		return $result;
 	}
 
@@ -123,6 +127,9 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		$linkCount = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $linkCount; ++$i){
 			$this->links[$i] = CommonTypes::getEntityLink($in, $protocolId);
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			$this->passengerBlockData = CommonTypes::readOptional($in, PassengerOfBlockData::read(...));
 		}
 
 		$this->deviceId = CommonTypes::getString($in);
@@ -149,6 +156,9 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		VarInt::writeUnsignedInt($out, count($this->links));
 		foreach($this->links as $link){
 			CommonTypes::putEntityLink($out, $protocolId, $link);
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			CommonTypes::writeOptional($out, $this->passengerBlockData, static fn(ByteBufferWriter $out, PassengerOfBlockData $data) => $data->write($out));
 		}
 
 		CommonTypes::putString($out, $this->deviceId);

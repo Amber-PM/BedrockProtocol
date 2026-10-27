@@ -14,6 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use function array_search;
+
 final class ItemStackRequestActionType{
 
 	private function __construct(){
@@ -40,6 +43,7 @@ final class ItemStackRequestActionType{
 	public const CRAFTING_RESULTS_DEPRECATED_ASK_TY_LAING = 17; //no idea what this is for
 	public const PLACE_INTO_BUNDLE = 18; //no longer sent since 1.26.40
 	public const TAKE_FROM_BUNDLE = 19; //no longer sent since 1.26.40
+	public const CRAFTING_RESERVED = 20; //1.26.60 and later
 
 	public const INNER_TYPES = [
 		self::TAKE => 0,
@@ -63,4 +67,41 @@ final class ItemStackRequestActionType{
 		self::CRAFTING_NON_IMPLEMENTED_DEPRECATED_ASK_TY_LAING => 18,
 		self::CRAFTING_RESULTS_DEPRECATED_ASK_TY_LAING => 19, //no idea what this is for
 	];
+
+	//1.26.60 inserted the reserved action before the deprecated ones so their wire ids moved up by one
+	private const OUTER_TYPES_1_26_60 = [
+		self::CRAFTING_RESERVED => 16,
+		self::CRAFTING_NON_IMPLEMENTED_DEPRECATED_ASK_TY_LAING => 17,
+		self::CRAFTING_RESULTS_DEPRECATED_ASK_TY_LAING => 18,
+	];
+	private const INNER_TYPES_1_26_60 = [
+		self::CRAFTING_RESERVED => 18,
+		self::CRAFTING_NON_IMPLEMENTED_DEPRECATED_ASK_TY_LAING => 19,
+		self::CRAFTING_RESULTS_DEPRECATED_ASK_TY_LAING => 20,
+	];
+
+	public static function toOuterType(int $type, int $protocolId) : ?int{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			return self::OUTER_TYPES_1_26_60[$type] ?? ($type === self::PLACE_INTO_BUNDLE || $type === self::TAKE_FROM_BUNDLE ? null : $type);
+		}
+		return $type === self::CRAFTING_RESERVED ? null : $type;
+	}
+
+	public static function fromOuterType(int $outerType, int $protocolId) : ?int{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			$type = array_search($outerType, self::OUTER_TYPES_1_26_60, true);
+			if($type !== false){
+				return $type;
+			}
+			return $outerType <= self::CRAFTING_LOOM ? $outerType : null;
+		}
+		return $outerType === self::CRAFTING_RESERVED ? null : $outerType;
+	}
+
+	public static function toInnerType(int $type, int $protocolId) : ?int{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60 && isset(self::INNER_TYPES_1_26_60[$type])){
+			return self::INNER_TYPES_1_26_60[$type];
+		}
+		return $type === self::CRAFTING_RESERVED ? null : (self::INNER_TYPES[$type] ?? null);
+	}
 }

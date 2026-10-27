@@ -44,16 +44,17 @@ final class ProtocolInfoTest extends TestCase{
 		}
 		$accepted = $constants['ACCEPTED_PROTOCOL'];
 		self::assertIsArray($accepted);
-		self::assertCount(32, $accepted);
+		self::assertCount(33, $accepted);
 		self::assertSame(array_values(array_unique($accepted)), $accepted);
 		self::assertCount(count($declared), array_unique($declared), 'protocol IDs must stay distinct for admission');
 		foreach($declared as $name => $value){
 			self::assertContains($value, $accepted, "$name is no longer accepted");
 		}
 		self::assertContains($constants['CURRENT_PROTOCOL'], $accepted);
-		//released 1.26.50 (and its 1.26.51 hotfix) is 2193, the 2192 preview stays separate
-		self::assertSame(2193, $constants['CURRENT_PROTOCOL']);
-		self::assertNotSame($constants['PROTOCOL_1_26_50'], $constants['CURRENT_PROTOCOL']);
+		self::assertSame(2225, $constants['CURRENT_PROTOCOL']);
+		//released 1.26.50 and its 1.26.51 hotfix stay 2193 and the 2192 preview stays separate
+		self::assertSame(2193, $constants['PROTOCOL_1_26_51']);
+		self::assertNotSame($constants['PROTOCOL_1_26_50'], $constants['PROTOCOL_1_26_51']);
 	}
 
 	public function testAdvertisedVersionsMatchEachOther() : void{

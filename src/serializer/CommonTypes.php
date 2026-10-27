@@ -45,6 +45,7 @@ use pocketmine\network\mcpe\protocol\types\entity\Vec3MetadataProperty;
 use pocketmine\network\mcpe\protocol\types\FloatGameRule;
 use pocketmine\network\mcpe\protocol\types\GameRule;
 use pocketmine\network\mcpe\protocol\types\IntGameRule;
+use pocketmine\network\mcpe\protocol\types\inventory\HandSlot;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\network\mcpe\protocol\types\NullGameRule;
@@ -149,10 +150,22 @@ final class CommonTypes{
 		self::putString($out, "#" . str_pad(dechex($color->toARGB()), 8, "0", STR_PAD_LEFT));
 	}
 
+	/**
+	 * @throws PacketDecodeException
+	 * @throws DataDecodeException
+	 */
+	public static function readHandSlot(ByteBufferReader $in) : HandSlot{
+		return HandSlot::fromPacket(Byte::readUnsigned($in));
+	}
+
+	public static function writeHandSlot(ByteBufferWriter $out, HandSlot $hand) : void{
+		Byte::writeUnsigned($out, $hand->value);
+	}
+
 	/** @throws DataDecodeException */
 	public static function getSkin(ByteBufferReader $in, int $protocolId) : SkinData{
 		$skinId = self::getString($in);
-		$skinPlayFabId = self::getString($in);
+		$skinPlayFabId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_60 ? "" : self::getString($in);
 		$skinResourcePatch = self::getString($in);
 		$skinData = self::getSkinImage($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
@@ -280,7 +293,9 @@ final class CommonTypes{
 
 	public static function putSkin(ByteBufferWriter $out, int $protocolId, SkinData $skin) : void{
 		self::putString($out, $skin->getSkinId());
-		self::putString($out, $skin->getPlayFabId());
+		if($protocolId < ProtocolInfo::PROTOCOL_1_26_60){
+			self::putString($out, $skin->getPlayFabId());
+		}
 		self::putString($out, $skin->getResourcePatch());
 		self::putSkinImage($out, $skin->getSkinImage());
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){

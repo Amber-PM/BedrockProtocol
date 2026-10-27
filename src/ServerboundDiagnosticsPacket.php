@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\EntityDiagnosticTimingInfo;
 use pocketmine\network\mcpe\protocol\types\MemoryCategoryCounter;
@@ -174,7 +175,10 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
 				$this->entityDiagnostics = CommonTypes::readList($in, static function(ByteBufferReader $in) use ($protocolId) : EntityDiagnosticTimingInfo{
 					$info = EntityDiagnosticTimingInfo::read($in);
-					if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+						CommonTypes::readOptional($in, CommonTypes::getVector3(...)); //position
+						CommonTypes::readOptional($in, CommonTypes::getString(...)); //dimension
+					}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
 						CommonTypes::getVector3($in); //position
 						CommonTypes::getString($in); //dimension
 					}
@@ -182,7 +186,9 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 				});
 				$this->systemDiagnostics = CommonTypes::readList($in, SystemDiagnosticTimingInfo::read(...));
 
-				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+					$this->systemCategories = CommonTypes::readOptional($in, static fn(ByteBufferReader $in) => CommonTypes::readList($in, SystemCategory::read(...))) ?? [];
+				}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 					$this->systemCategories = CommonTypes::readList($in, SystemCategory::read(...));
 				}
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
@@ -207,10 +213,22 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 			CommonTypes::writeList($out, $this->memoryCategoryValues, static fn($out, $v) => $v->write($out));
 
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
-				CommonTypes::writeList($out, $this->entityDiagnostics, static fn($out, $v) => $v->write($out));
+				CommonTypes::writeList($out, $this->entityDiagnostics, static function(ByteBufferWriter $out, EntityDiagnosticTimingInfo $v) use ($protocolId) : void{
+					$v->write($out);
+					//position and dimension are not kept
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+						CommonTypes::putBool($out, false); //no position
+						CommonTypes::putBool($out, false); //no dimension
+					}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+						CommonTypes::putVector3($out, Vector3::zero());
+						CommonTypes::putString($out, "");
+					}
+				});
 				CommonTypes::writeList($out, $this->systemDiagnostics, static fn($out, $v) => $v->write($out));
 
-				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+					CommonTypes::writeOptional($out, $this->systemCategories, static fn(ByteBufferWriter $out, array $v) => CommonTypes::writeList($out, $v, static fn($out, $c) => $c->write($out)));
+				}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 					CommonTypes::writeList($out, $this->systemCategories, static fn($out, $v) => $v->write($out));
 				}
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){

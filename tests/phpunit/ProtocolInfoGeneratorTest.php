@@ -181,6 +181,7 @@ final class ProtocolInfoGeneratorTest extends TestCase{
 		yield 'previous default' => [['major' => 1, 'minor' => 26, 'patch' => 44, 'revision' => 0, 'beta' => false, 'protocol_version' => 2169]];
 		//same game version, distinct protocol
 		yield '26.50 preview protocol' => [['major' => 1, 'minor' => 26, 'patch' => 50, 'revision' => 0, 'beta' => false, 'protocol_version' => 2192]];
+		yield 'previous 26.51 default' => [['major' => 1, 'minor' => 26, 'patch' => 50, 'revision' => 0, 'beta' => false, 'protocol_version' => 2193]];
 	}
 
 	/**
@@ -201,17 +202,21 @@ final class ProtocolInfoGeneratorTest extends TestCase{
 	/** @return iterable<string, array{array<string, string>, array<string, int>}> */
 	public static function templateVersionUpdates() : iterable{
 		yield 'other accepted 26.50 protocol' => [
-			['CURRENT_PROTOCOL = self::PROTOCOL_1_26_51' => 'CURRENT_PROTOCOL = self::PROTOCOL_1_26_50'],
-			['protocol_version' => 2192]
+			[
+				'CURRENT_PROTOCOL = self::PROTOCOL_1_26_60' => 'CURRENT_PROTOCOL = self::PROTOCOL_1_26_50',
+				"'v26.60'" => "'v26.50'",
+				"'1.26.60'" => "'1.26.50'",
+			],
+			['patch' => 50, 'protocol_version' => 2192]
 		];
 		//synthetic, only proves a later explicit update still regenerates
 		yield 'future protocol' => [
 			[
-				'CURRENT_PROTOCOL = self::PROTOCOL_1_26_51' => 'CURRENT_PROTOCOL = self::PROTOCOL_1_99_0',
-				'self::PROTOCOL_1_26_51,' => 'self::PROTOCOL_1_26_51, self::PROTOCOL_1_99_0,',
-				'public const PROTOCOL_1_26_51 = 2193;' => 'public const PROTOCOL_1_99_0 = 9999; public const PROTOCOL_1_26_51 = 2193;',
-				"'v26.50'" => "'v99.0'",
-				"'1.26.50'" => "'1.99.0'",
+				'CURRENT_PROTOCOL = self::PROTOCOL_1_26_60' => 'CURRENT_PROTOCOL = self::PROTOCOL_1_99_0',
+				'self::PROTOCOL_1_26_60,' => 'self::PROTOCOL_1_26_60, self::PROTOCOL_1_99_0,',
+				'public const PROTOCOL_1_26_60 = 2225;' => 'public const PROTOCOL_1_99_0 = 9999; public const PROTOCOL_1_26_60 = 2225;',
+				"'v26.60'" => "'v99.0'",
+				"'1.26.60'" => "'1.99.0'",
 			],
 			['minor' => 99, 'patch' => 0, 'protocol_version' => 9999]
 		];
@@ -249,10 +254,10 @@ final class ProtocolInfoGeneratorTest extends TestCase{
 
 	public function testPacketChangesRequireExplicitCanonicalUpdate() : void{
 		$path = $this->directory . '/tools/ProtocolInfo.php.template';
-		$source = str_replace('public const RECORD_STARTED_PACKET = 0x160;', "public const RECORD_STARTED_PACKET = 0x160;\n\tpublic const EXAMPLE_PACKET = 0x161;", self::readFile($path));
+		$source = str_replace('public const SERVERBOUND_REGISTER_AUDIO_CONTENT_PACKET = 0x168;', "public const SERVERBOUND_REGISTER_AUDIO_CONTENT_PACKET = 0x168;\n\tpublic const EXAMPLE_PACKET = 0x169;", self::readFile($path));
 		file_put_contents($path, $source);
 		$input = self::validInput();
-		$input['packets']['ExamplePacket'] = 353;
+		$input['packets']['ExamplePacket'] = 361;
 		[$status, $output] = $this->runGenerator(json_encode($input, JSON_THROW_ON_ERROR));
 		self::assertSame(0, $status, $output);
 		self::assertSame($source, self::readFile($this->directory . '/src/ProtocolInfo.php'));
@@ -317,14 +322,14 @@ final class ProtocolInfoGeneratorTest extends TestCase{
 	public function testNewPacketStubGenerationRespectsUmaskAndHasExpectedContent() : void{
 		$path = $this->directory . '/tools/ProtocolInfo.php.template';
 		$source = str_replace(
-			'public const RECORD_STARTED_PACKET = 0x160;',
-			"public const RECORD_STARTED_PACKET = 0x160;\n\tpublic const EXAMPLE_PACKET = 0x161;",
+			'public const SERVERBOUND_REGISTER_AUDIO_CONTENT_PACKET = 0x168;',
+			"public const SERVERBOUND_REGISTER_AUDIO_CONTENT_PACKET = 0x168;\n\tpublic const EXAMPLE_PACKET = 0x169;",
 			self::readFile($path)
 		);
 		file_put_contents($path, $source);
 
 		$input = self::validInput();
-		$input['packets']['ExamplePacket'] = 353;
+		$input['packets']['ExamplePacket'] = 361;
 
 		[$status, $output] = $this->runGenerator(json_encode($input, JSON_THROW_ON_ERROR));
 		self::assertSame(0, $status, $output);

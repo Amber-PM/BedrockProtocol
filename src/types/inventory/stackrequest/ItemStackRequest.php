@@ -81,6 +81,7 @@ final class ItemStackRequest{
 			LoomStackRequestAction::ID => LoomStackRequestAction::read($in, $protocolId),
 			DeprecatedCraftingNonImplementedStackRequestAction::ID => DeprecatedCraftingNonImplementedStackRequestAction::read($in, $protocolId),
 			DeprecatedCraftingResultsStackRequestAction::ID => DeprecatedCraftingResultsStackRequestAction::read($in, $protocolId),
+			CraftReservedStackRequestAction::ID => CraftReservedStackRequestAction::read($in, $protocolId),
 			default => throw new PacketDecodeException("Unhandled item stack request action type $typeId"),
 		};
 	}
@@ -89,11 +90,12 @@ final class ItemStackRequest{
 		$requestId = CommonTypes::readItemStackRequestId($in);
 		$actions = CommonTypes::readList($in, static function(ByteBufferReader $in) use ($protocolId) : ItemStackRequestAction{
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-				$typeId = VarInt::readUnsignedInt($in);
+				$outerTypeId = VarInt::readUnsignedInt($in);
 				$innerTypeId = Byte::readUnsigned($in);
-				$expectedInnerType = ItemStackRequestActionType::INNER_TYPES[$typeId] ?? "unknown";
-				if($expectedInnerType !== $innerTypeId){
-					throw new PacketDecodeException("ItemStackRequestAction type mismatch: outer type $typeId, expected inner type $expectedInnerType, actual inner type $innerTypeId");
+				$typeId = ItemStackRequestActionType::fromOuterType($outerTypeId, $protocolId);
+				$expectedInnerType = $typeId !== null ? (ItemStackRequestActionType::toInnerType($typeId, $protocolId) ?? "unknown") : "unknown";
+				if($typeId === null || $expectedInnerType !== $innerTypeId){
+					throw new PacketDecodeException("ItemStackRequestAction type mismatch: outer type $outerTypeId, expected inner type $expectedInnerType, actual inner type $innerTypeId");
 				}
 			}else{
 				$innerTypeId = Byte::readUnsigned($in);
@@ -112,10 +114,15 @@ final class ItemStackRequest{
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeItemStackRequestId($out, $this->requestId);
 		CommonTypes::writeList($out, $this->actions, static function(ByteBufferWriter $out, ItemStackRequestAction $action) use ($protocolId) : void{
-			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-				VarInt::writeUnsignedInt($out, $action->getTypeId());
+			$outerTypeId = ItemStackRequestActionType::toOuterType($action->getTypeId(), $protocolId);
+			$innerTypeId = ItemStackRequestActionType::toInnerType($action->getTypeId(), $protocolId);
+			if($outerTypeId === null || $innerTypeId === null){
+				throw new \InvalidArgumentException("Item stack request action type " . $action->getTypeId() . " is not available for protocol $protocolId");
 			}
-			Byte::writeUnsigned($out, ItemStackRequestActionType::INNER_TYPES[$action->getTypeId()]);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				VarInt::writeUnsignedInt($out, $outerTypeId);
+			}
+			Byte::writeUnsigned($out, $innerTypeId);
 			$action->write($out, $protocolId);
 		});
 		CommonTypes::writeList($out, $this->filterStrings, CommonTypes::putString(...));

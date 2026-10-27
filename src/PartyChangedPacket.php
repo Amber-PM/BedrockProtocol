@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use pocketmine\network\mcpe\protocol\types\PlayerPartyInfo;
 
 class PartyChangedPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::PARTY_CHANGED_PACKET;
@@ -38,7 +39,18 @@ class PartyChangedPacket extends DataPacket implements ServerboundPacket{
 
 	public function isPartyLeader() : bool{ return $this->partyLeader; }
 
+	//an empty party id means the player left the party
+	public function getPartyInfo() : ?PlayerPartyInfo{
+		return $this->partyId === "" ? null : new PlayerPartyInfo($this->partyId, $this->partyLeader);
+	}
+
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			$info = CommonTypes::readOptional($in, PlayerPartyInfo::read(...));
+			$this->partyId = $info?->getPartyId() ?? "";
+			$this->partyLeader = $info?->isPartyLeader() ?? false;
+			return;
+		}
 		$this->partyId = CommonTypes::getString($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
 			$this->partyLeader = CommonTypes::getBool($in);
@@ -46,6 +58,10 @@ class PartyChangedPacket extends DataPacket implements ServerboundPacket{
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			CommonTypes::writeOptional($out, $this->getPartyInfo(), static fn(ByteBufferWriter $out, PlayerPartyInfo $info) => $info->write($out));
+			return;
+		}
 		CommonTypes::putString($out, $this->partyId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
 			CommonTypes::putBool($out, $this->partyLeader);
