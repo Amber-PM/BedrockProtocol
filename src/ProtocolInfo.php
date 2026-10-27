@@ -76,8 +76,8 @@ final class ProtocolInfo{
 
 	//thx mojang :alien:
 	//this is a fictional version of the protocol
-	//1.26.50 shipped as 2193; 2192 is the number CloudburstMC's 26.50 codec (and the preview) use. Both share one format.
 	public const PROTOCOL_1_26_60 = 2225;
+	//1.26.50 shipped as 2193; 2192 is the number CloudburstMC's 26.50 codec (and the preview) use. Both share one format.
 	public const PROTOCOL_1_26_51 = 2193;
 	public const PROTOCOL_1_26_50 = 2192;
 	public const PROTOCOL_1_26_44 = 2169;
